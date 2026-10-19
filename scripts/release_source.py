@@ -10,7 +10,7 @@ EXACT = {'.gitignore', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md',
          'requirements-build.txt', 'constraints-windows-py313.txt', 'start.bat', 'start.ps1',
          'android/app/AndroidManifest.xml', 'vendor/README.md'}
 SCRIPTS = {'setup.ps1', 'java-tools.ps1', 'build-android.ps1', 'build-mf-camera.ps1',
-           'build-windows.py', 'frozen-entry.py', 'check-panel-gestures.ps1',
+           'build-windows.py', 'build-installer.py', 'phonebridge-setup.iss', 'frozen-entry.py', 'check-panel-gestures.ps1',
            'release_source.py', 'audit-source.py', 'package-source.py',
            'fetch-dependencies.py', 'dependencies.json', 'cpu-temperature.ps1',
            'CpuTemperature.cs', 'display-driver.ps1', 'vdd_settings.xml',
@@ -30,6 +30,8 @@ def allowed(name):
     if path.is_absolute() or any(p in EXCLUDED or p == '..' for p in path.parts):
         return False
     name = path.as_posix()
+    if name.startswith('docs/screenshots/'):
+        return len(path.parts)==3 and path.suffix.lower() in {'.png','.jpg','.jpeg'}
     if name in EXACT:
         return True
     if name.startswith('scripts/'):
@@ -76,6 +78,9 @@ def audit(root=ROOT):
     problems = []
     for path in selected:
         name = path.relative_to(root).as_posix()
+        if name.startswith('docs/screenshots/'):
+            # Binary screenshots require visual privacy review, not UTF-8 scanning.
+            continue
         for number, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
             for rule, pattern in RULES.items():
                 if pattern.search(line):

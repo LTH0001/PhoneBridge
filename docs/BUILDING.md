@@ -70,3 +70,22 @@ Windows EXE 是另一条可选构建链：先准备 APK、原生相机、scrcpy�
 - ZXing 从官方地址下载并核对 SHA-256 通过；公开源码扫描无发现，PowerShell 语法检查通过。
 - APK 构建与签名校验通过：显式旧式工具链路径、标准 SDK 目录接口均验证；后者使用本机已有 Build Tools 34.0.0 / android-33 与 JDK 17，未实际下载默认示例的 35.0.0 / android-34。未向手机发起安装。
 - GitHub CI 已配置但尚未在 GitHub 运行；Windows 正式发行包未在本轮重建，驱动/无线/AOA 未重新实机验收。
+## Windows 安装版
+
+先按本文构建单文件 EXE（`python scripts/build-windows.py --onefile`），再用 Inno Setup 6.7+ 编译安装器：
+
+```powershell
+python scripts/build-installer.py --exe "<单文件输出目录>/PhoneBridge-0.8.13-windows-x64.exe" --iscc "<Inno Setup目录>/ISCC.exe"
+```
+
+可选 `--chinese-language "<兼容的 ChineseSimplified.isl>" --chinese-license "<翻译许可文件>"` 添加简体中文安装界面，并随包保留翻译许可。
+脚本不下载编译器；从 https://jrsoftware.org/isdl.php 获取并核验发行者签名。
+输出在 `dist/PhoneBridge-<版本>-dev-setup-<时间>/`，包含 Setup EXE、构建记录和 SHA256 摘要。
+
+安装版提供自选目录、可选桌面快捷方式、开始菜单和 Windows 卸载入口；默认当前用户安装。
+手机 APK 同时位于安装目录，仍需手机端确认安装。
+升级前退出旧版；安装器不会强杀进程、安装驱动、修改防火墙或设置开机启动。
+配置位于 `%LOCALAPPDATA%/PhoneBridge`，升级与卸载均保留。
+安装版和便携版共用同一套配置，不应同时运行。
+当前产物仍是未签名开发预览；安装器不代表发布审计已完成，参见 RELEASING.md。
+

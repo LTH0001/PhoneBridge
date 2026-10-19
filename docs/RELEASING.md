@@ -1,5 +1,12 @@
 # 发布前检查清单
 
+## 安装版附件
+
+`scripts/build-installer.py` 将已验证的单文件 EXE 包成 Inno Setup 安装器，拒绝 APK 不一致的输入。
+发布时推荐提供 `PhoneBridge-Setup-<版本>-windows-x64.exe`，并保留便携 EXE 和 Android APK。
+Setup 在 Release 附件上传，不加入源码仓库。校验值位于同目录 `SHA256SUMS.txt`。
+安装版默认当前用户安装，保留配置，不自动安装或卸载驱动；正式发布前应在干净机器验证安装、升级、卸载与快捷方式。
+
 ## 已完成的源码准备
 
 - [x] 自有代码选择 MIT；第三方声明独立保留。

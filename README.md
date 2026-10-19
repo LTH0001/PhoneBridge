@@ -4,6 +4,28 @@
 
 PhoneBridge includes a Windows host, an Android companion app, and a local API. Project-owned code is licensed under MIT; third-party components retain their own licenses.
 
+## 界面预览
+
+### Windows 桌面端
+
+连接与管理手机，按需开启摄像头、麦克风和触控副屏。截图中的设备序列号已遮盖。
+
+![PhoneBridge Windows 桌面端设备概览](docs/screenshots/desktop-overview.png)
+
+### 手机性能座舱
+
+在手机上查看 CPU、GPU、内存与存储状态，控制电脑音量、播放设备和音乐；支持进入硬件详情、触控板与语音输入。
+
+![PhoneBridge 手机性能座舱与音乐控制面板](docs/screenshots/phone-dashboard.jpg)
+
+### 手机触屏副屏
+
+将电脑扩展桌面传到手机，保留触屏操作，并可通过右上角入口切回控制面板。图中的桌面壁纸仅为使用场景展示，不随软件分发。
+
+![PhoneBridge 手机显示电脑扩展桌面](docs/screenshots/phone-extended-display.jpg)
+
+> 以上为实机截图。画面中的硬件、音乐会话与温度状态取决于当前电脑和已授权组件，并非所有指标都默认可用。
+
 当前版本 **0.8.13 · 开发预览**。面向 Windows 11 x64 / Android 8.0+（最低 API 26）；实际完整功能只在有限设备上验证，不能视为所有机型兼容。尚未提供正式签名安装器。
 
 手机“全部硬件”可查看 CPU、内存、全部 GPU（含核显）、物理磁盘、网卡及系统识别到的 NPU。详情保留任务管理器性能页的基础字段并补充档案、历史与诊断；字段存在不等于驱动提供了数值，未接入的压缩内存/NPU 性能计数器会明确标注。网卡地址仅展示给已授权的本地面板，不提交到仓库或外部服务。
