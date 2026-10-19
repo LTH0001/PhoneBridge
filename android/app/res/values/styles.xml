@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="PhoneBridgeHomeTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowBackground">#F7F8FA</item>
+        <item name="android:colorAccent">#376BC1</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:statusBarColor">#F7F8FA</item>
+        <item name="android:navigationBarColor">#F7F8FA</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:alertDialogTheme">@style/PhoneBridgeDialog</item>
+    </style>
+    <style name="PhoneBridgeTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowBackground">#0B1220</item>
+        <item name="android:colorAccent">#65DCC2</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:statusBarColor">#0B1220</item>
+        <item name="android:navigationBarColor">#0B1220</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:alertDialogTheme">@style/PhoneBridgeDialog</item>
+    </style>
+    <style name="PhoneBridgeDialog" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#178F91</item>
+        <item name="android:fontFamily">sans</item>
+    </style>
+</resources>

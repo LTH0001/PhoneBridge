@@ -1,0 +1,21 @@
+# Reference resolver constraints tested on Windows x64 / Python 3.13.
+# Install with: pip install -r requirements.txt -c constraints-windows-py313.txt
+# Direct dependencies remain in requirements.txt; no binaries or credentials.
+altgraph==0.17.5
+certifi==2026.7.22
+cffi==2.1.1
+charset-normalizer==3.5.2
+colorama==0.4.6
+idna==3.20
+packaging==26.3
+pefile==2024.8.26
+pycparser==3.11
+pyinstaller-hooks-contrib==2026.8
+pywin32-ctypes==0.2.3
+requests==2.34.2
+setuptools==84.0.0
+srt==3.5.3
+tqdm==4.70.1
+typing_extensions==4.16.0
+urllib3==2.8.0
+websockets==17.2

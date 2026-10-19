@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.phonebridge.app"
+    android:versionCode="21"
+    android:versionName="0.8.10">
+    <queries>
+        <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
+        <intent><action android:name="android.speech.RecognitionService" /></intent>
+    </queries>
+
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="33" />
+    <uses-feature android:name="android.hardware.usb.accessory" android:required="false" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.accessory" android:required="false" />
+    <uses-feature android:name="android.hardware.consumerir" android:required="false" />
+
+    <application
+        android:label="PhoneBridge"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:allowBackup="false"
+        android:theme="@style/PhoneBridgeTheme">
+        <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/PhoneBridgeHomeTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter><action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" /></intent-filter>
+            <meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" android:resource="@xml/accessory_filter" />
+        </activity>
+        <service
+            android:name=".BridgeService"
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone|location|dataSync" />
+        <activity android:name=".DisplayActivity" android:exported="true"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity android:name=".DashboardActivity" android:exported="true"
+            android:screenOrientation="sensorLandscape" android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity android:name=".DetailActivity" android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity android:name=".SystemActivity" android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity android:name=".StorageActivity" android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity android:name=".PairScanActivity" android:exported="false" android:screenOrientation="sensorLandscape" />
+        <activity android:name=".InputActivity" android:exported="false" android:screenOrientation="sensorLandscape" android:theme="@style/PhoneBridgeHomeTheme" />
+    </application>
+</manifest>

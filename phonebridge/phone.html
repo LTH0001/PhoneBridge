@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>PhoneBridge · 电脑屏幕</title>
+<style>body{margin:0;background:#0c1420;color:#dfedfc;font:15px system-ui}header{display:flex;gap:8px;align-items:center;padding:10px;background:#182538}strong{flex:1}button{background:#314767;color:white;border:0;border-radius:8px;padding:10px}#screen{display:block;max-width:100vw;max-height:calc(100vh - 75px);margin:auto;touch-action:none}p{text-align:center;color:#a9bdd5}#keys{display:flex;justify-content:center;gap:8px}</style>
+<header><strong>PhoneBridge</strong><span id="status">正在连接</span><button onclick="document.documentElement.requestFullscreen()">全屏</button></header>
+<img id="screen" alt="电脑画面"><p>旋转手机可获得更大的画面；触控需在电脑端开启。</p>
+<div id="keys"><button data-key="escape">Esc</button><button data-key="backspace">退格</button><button data-key="enter">Enter</button><button data-key="left">←</button><button data-key="right">→</button></div>
+<script>
+const token=new URLSearchParams(location.search).get('token');const image=document.querySelector('#screen');
+async function refresh(){try{const r=await fetch('/desktop.jpg?token='+encodeURIComponent(token));if(!r.ok)throw Error();const url=URL.createObjectURL(await r.blob());const old=image.src;image.src=url;if(old.startsWith('blob:'))URL.revokeObjectURL(old);document.querySelector('#status').textContent='USB 已连接'}catch{document.querySelector('#status').textContent='等待电脑发送画面'}setTimeout(refresh,80)}
+async function input(data){const r=await fetch('/api/display/input',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(data)});if(!r.ok)document.querySelector('#status').textContent='触控未开启'}
+image.addEventListener('pointerup',e=>{const b=image.getBoundingClientRect();input({action:'click',x:(e.clientX-b.left)/b.width,y:(e.clientY-b.top)/b.height})});
+document.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>input({action:'key',code:b.dataset.key}));refresh();
+</script></html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PhoneBridge · 手机 App 安装</title>
+<style>
+:root{color-scheme:light;--bg:#f7f8fa;--card:#fff;--edge:#e0e4eb;--text:#252c38;--muted:#647082;--accent:#376bc1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.75 system-ui,"Microsoft YaHei",sans-serif;min-height:100vh}
+main{max-width:1080px;margin:auto;padding:32px 30px 24px}header{display:flex;align-items:center;gap:12px;padding-bottom:24px;margin-bottom:32px;border-bottom:1px solid var(--edge)}
+.mark{width:40px;height:40px;padding:6px;border-radius:11px;color:var(--accent);background:#e7eef9}.mark svg{width:100%;height:100%}.brand{font-size:18px;font-weight:650}.sub,.muted{color:var(--muted)}.sub{font-size:12px}
+h1{font-size:28px;font-weight:650;line-height:1.4;margin:0 0 12px;letter-spacing:-.5px}h2{font-size:16px;font-weight:650;margin:0 0 16px}p{margin:8px 0 16px}.intro{max-width:720px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1.3fr 1fr;gap:24px;align-items:start;margin-top:28px}.card{border:1px solid var(--edge);background:var(--card);border-radius:12px;padding:28px;box-shadow:0 2px 6px #23334d03}
+.step{display:flex;gap:14px;margin:20px 0}.num{color:var(--accent);font-size:12px;font-weight:650;line-height:26px}.step p{font-size:13px;color:var(--muted);margin:4px 0}
+.controls{display:flex;gap:10px;margin:12px 0 16px}select,button{font:inherit;border-radius:7px;border:1px solid #d4dae4;min-height:42px;background:#fff;color:var(--text);padding:9px 14px}select{width:100%;min-width:0}button{cursor:pointer;white-space:nowrap}button:hover{background:#f1f4f8}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #a7c3f0;outline-offset:3px}button:disabled{opacity:.45;cursor:not-allowed}
+.primary{background:var(--accent);border-color:var(--accent);color:white;font-weight:600;width:100%;margin-top:20px}.primary:hover{background:#2b5daf}
+.consent{display:flex;gap:10px;font-size:13px;color:var(--muted);align-items:flex-start}.consent input{margin-top:5px;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0}
+.status{padding:16px;border-radius:8px;background:#f4f6f9;border:1px solid transparent;margin:24px 0 0;overflow-wrap:anywhere}.status[data-state=success]{background:#edf6f1;border-color:#d6e9dd}.status[data-state=success] strong{color:#2a7752}.status[data-state=error]{background:#fcf3ee;border-color:#f0ddd1}.status[data-state=error] strong{color:#9a5135}.status strong{font-size:13px;font-weight:600}.status p{font-size:13px;color:var(--muted);margin:5px 0 0}
+.pulse{height:3px;background:var(--accent);margin:14px 0 0;animation:pulse 1.5s infinite}.small{font-size:12px;color:var(--muted)}footer{padding:24px 0;color:var(--muted);font-size:12px}.download{width:100%;margin-top:8px}
+@keyframes pulse{50%{opacity:.3}}@media(prefers-reduced-motion:reduce){.pulse{animation:none}}@media(max-width:740px){main{padding:24px 18px}.grid{grid-template-columns:1fr}.card{padding:22px}header{margin-bottom:24px}h1{font-size:25px}}
+</style>
+</head>
+<body><main>
+<header><div class="mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 9h16v12H3zM7 25h8m-4-4v4"/><rect x="22" y="5" width="8" height="22" rx="2"/><path d="M25 23h2M13 15h11"/></svg></div><div><div class="brand">PhoneBridge</div><div class="sub">手机外设管理</div></div></header>
+<h1>安装手机 App</h1>
+<p class="intro">用 USB 将手机连接电脑，即可在这里安装或更新 PhoneBridge。安装过程中，请保持手机解锁并确认系统提示。</p>
+<div class="grid">
+<section class="card" aria-labelledby="install-title"><h2 id="install-title">通过 USB 安装手机 App</h2>
+<p class="muted">选择已授权的 Android 手机</p>
+<div class="controls"><select id="devices" aria-label="选择 USB 手机"><option value="">正在查找手机…</option></select><button id="refresh" type="button">刷新</button></div>
+<p id="deviceHint" class="small">首次使用请解锁手机，允许 USB 调试。</p>
+<label class="consent"><input type="checkbox" id="consent"><span>这是我自己的手机，我确认安装 PhoneBridge。覆盖更新可能暂时中断外设连接，不会自动卸载旧版或清除数据。</span></label>
+<button type="button" class="primary" id="install" disabled>通过 USB 安装 / 更新</button>
+<div class="status" id="result" role="status" aria-live="polite" data-state="idle"><strong id="resultTitle">准备安装</strong><p id="resultText">请先选择已授权的手机。</p><div class="pulse" id="busy" hidden></div></div>
+<p class="small">安装过程中请保持数据线连接，留意手机的全屏安装页。没有看到确认页时不要连续重复点击。</p>
+</section>
+<aside class="card"><h2>第一次连接？</h2>
+<div class="step"><span class="num">01</span><div>准备一条数据线<p>手机解锁并连接电脑。仅充电的数据线无法安装。</p></div></div>
+<div class="step"><span class="num">02</span><div>打开 USB 调试并授权<p>在手机开发者选项中开启 USB 调试，再允许自己的电脑。不需要无线调试。部分品牌还需确认 USB 安装权限。</p></div></div>
+<div class="step"><span class="num">03</span><div>点击安装，在手机确认<p>完成后打开 PhoneBridge，再回到桌面端点击连接手机。</p></div></div>
+<hr style="border:0;border-top:1px solid var(--edge);margin:24px 0">
+<h2>不想开启 USB 调试？</h2><p class="small">可以下载 APK，传到手机后手动安装。网页不能绕过 Android 授权或直接向未授权手机安装；免调试 USB 连接仍为实验功能。</p>
+<button type="button" class="download" id="download">下载 APK，手动安装</button>
+</aside></div>
+<footer>安装由本机程序执行，不上传手机信息。请保持 PhoneBridge 桌面端运行。<br>安装失败后不会自动重试；请勿分享带有访问凭据的页面链接。</footer>
+</main>
+<script>
+'use strict';
+let token=new URLSearchParams(location.hash.slice(1)).get('token')||'';
+history.replaceState(null,'',location.pathname);
+const $=id=>document.getElementById(id);let working=false,loading=false,submitting=false,reported=false;
+function controls(){const authorized=!!$('devices').selectedOptions[0]?.dataset.authorized;$('install').disabled=!token||working||loading||!$('consent').checked||!authorized;$('refresh').disabled=working||loading||!token;$('devices').disabled=working||loading||!token;$('consent').disabled=working;$('download').disabled=!token;if(token&&!loading&&$('devices').value)$('deviceHint').textContent=authorized?'手机已授权，勾选下方确认即可发起安装。':'手机尚未授权，请解锁并允许自己的电脑。';}
+function show(state,message){reported=true;$('result').dataset.state=state;$('resultTitle').textContent=({idle:'准备安装',installing:'请在手机确认',success:'安装完成',error:'需要处理'})[state]||'安装状态';$('resultText').textContent=message;$('busy').hidden=state!=='installing';}
+async function api(path,body){const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});const value=await response.json();if(!response.ok)throw Error(response.status===401?'页面授权已失效，请从桌面端重新打开安装页。':value.error||'请求失败');return value;}
+async function refresh(){if(!token)return;loading=true;controls();try{const data=await api('/api/apk/devices');const selected=$('devices').value;$('devices').replaceChildren();for(const d of data.devices){const option=document.createElement('option');option.value=d.serial;const model=/\bmodel:(\S+)/.exec(d.detail||'');const state={device:'已授权',unauthorized:'请在手机允许调试',offline:'离线'}[d.state]||d.state;option.textContent=(model?model[1].replaceAll('_',' '):'Android 手机')+' · '+state+' · '+d.serial;if(d.state==='device')option.dataset.authorized='1';$('devices').append(option);}if(!data.devices.length){const option=document.createElement('option');option.value='';option.textContent='未检测到 USB 手机';$('devices').append(option);}if(data.devices.some(d=>d.serial===selected))$('devices').value=selected;$('deviceHint').textContent=data.devices.length?'未授权的手机不能安装，请解锁并允许自己的电脑。':'检查数据线、USB 调试和手机授权；部分品牌需要官方 ADB 驱动。';}catch(e){show('error',e.message);}finally{loading=false;controls();}}
+async function poll(){if(!token)return;try{const job=await api('/api/apk/status');working=submitting||job.state==='installing';if(!submitting&&(job.state!=='idle'||!reported))show(job.state,job.message);controls();}catch(e){show('error',working?'状态暂时无法读取，请先检查手机，勿重复安装。':e.message);}setTimeout(poll,1500);}
+$('refresh').onclick=refresh;$('devices').onchange=controls;$('consent').onchange=controls;
+$('install').onclick=async()=>{if($('install').disabled)return;working=true;submitting=true;controls();show('installing','正在发起 USB 安装，请保持手机解锁。');try{const job=await api('/api/apk/install',{serial:$('devices').value,confirmed:true});show(job.state,job.message);$('consent').checked=false;}catch(e){show('error',e.message);working=false;}finally{submitting=false;controls();}};
+$('download').onclick=async()=>{try{const response=await fetch('/api/apk/download',{headers:{Authorization:'Bearer '+token}});if(!response.ok)throw Error('APK 下载失败，请从桌面端重新打开安装页。');const url=URL.createObjectURL(await response.blob());const link=document.createElement('a');link.href=url;link.download='PhoneBridge-Android.apk';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(e){show('error',e.message);}};
+controls();if(token){refresh();poll();}else{show('error','请从桌面端“安装与帮助 → 网页 USB 安装”打开此页；直接打开网址不含授权。');}
+</script></body></html>

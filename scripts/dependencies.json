@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "downloads": {
+    "zxing": {
+      "version": "3.5.3",
+      "license": "Apache-2.0",
+      "url": "https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.jar",
+      "path": "vendor/zxing/core-3.5.3.jar",
+      "sha256": "8d8064c1636fdaef7189dd9055c7d59950a8940a12f2293956446ec3c109fd82"
+    },
+    "vosk-model": {
+      "version": "small-cn-0.22",
+      "license": "Apache-2.0",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip",
+      "path": "vendor/vosk-model-small-cn-0.22.zip",
+      "sha256": "3af8b0e7e0f835ae9d414ce5df580237a3cfb08d586c9fbbb0f7ff29ad5b14ba"
+    }
+  }
+}
