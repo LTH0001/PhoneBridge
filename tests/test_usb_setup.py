@@ -106,6 +106,37 @@ class WiredSetupTests(unittest.TestCase):
         bridge.connect.assert_called_once_with('test-phone')
         bridge.detect_wired.assert_not_called();prepare.assert_not_called()
 
+    def test_gui_does_not_hide_adb_when_aoa_or_failed_aoa_is_present(self):
+        adb = [{'serial':'authorized-test-phone', 'state':'device'}]
+        for serial in ('usb:18d1:2d01:3:18', 'usb:18d1:2d00:3:18', 'usb-error:18d1:2d00'):
+            with self.subTest(serial=serial):
+                native = [{'serial':serial, 'transport':'accessory'}]
+                bridge = SimpleNamespace(detect=Mock(return_value=adb))
+                with patch.object(usb_setup, 'discover', return_value=native):
+                    self.assertEqual(Bridge.detect_wired(bridge, include_adb=True), adb+native)
+                bridge.detect.assert_called_once_with()
+
+    def test_authorized_adb_is_first_but_unauthorized_entries_are_retained(self):
+        pending = {'serial':'pending-test-phone', 'state':'unauthorized'}
+        ready = {'serial':'authorized-test-phone', 'state':'device'}
+        native = [{'serial':'usb:18d1:2d01:3:18', 'transport':'accessory'}]
+        bridge = SimpleNamespace(detect=Mock(return_value=[pending, ready]))
+        with patch.object(usb_setup, 'discover', return_value=native):
+            self.assertEqual(Bridge.detect_wired(bridge, include_adb=True), [ready, pending]+native)
+
+    def test_native_only_aoa_discovery_does_not_start_adb(self):
+        bridge = SimpleNamespace(detect=Mock())
+        native = [{'serial':'usb:18d1:2d01:3:18', 'transport':'accessory'}]
+        with patch.object(usb_setup, 'discover', return_value=native):
+            self.assertEqual(Bridge.detect_wired(bridge), native)
+        bridge.detect.assert_not_called()
+
+    def test_gui_keeps_adb_when_no_native_device_exists(self):
+        adb = [{'serial':'authorized-test-phone', 'state':'device'}]
+        bridge = SimpleNamespace(detect=Mock(return_value=adb))
+        with patch.object(usb_setup, 'discover', return_value=[]):
+            self.assertEqual(Bridge.detect_wired(bridge, include_adb=True), adb)
+
     def test_failed_start_is_visible_without_libusb_or_adb(self):
         failure={'instance':'verified-local-phone','problem':10}
         with patch.object(usb_setup,'supported_devices',return_value=[]), \

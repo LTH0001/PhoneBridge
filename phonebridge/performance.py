@@ -16,7 +16,8 @@ class Counters:
         definitions={'PdhOpenQueryW':([w.LPCWSTR,c.c_size_t,c.POINTER(c.c_void_p)],w.LONG),
             'PdhAddEnglishCounterW':([c.c_void_p,w.LPCWSTR,c.c_size_t,c.POINTER(c.c_void_p)],w.LONG),
             'PdhCollectQueryData':([c.c_void_p],w.LONG),'PdhCloseQuery':([c.c_void_p],w.LONG),
-            'PdhGetFormattedCounterArrayW':([c.c_void_p,w.DWORD,c.POINTER(w.DWORD),c.POINTER(w.DWORD),c.c_void_p],w.LONG)}
+            'PdhGetFormattedCounterArrayW':([c.c_void_p,w.DWORD,c.POINTER(w.DWORD),c.POINTER(w.DWORD),c.c_void_p],w.LONG),
+            'PdhGetFormattedCounterValue':([c.c_void_p,w.DWORD,c.c_void_p,c.POINTER(CounterValue)],w.LONG)}
         for name,(args,ret) in definitions.items():getattr(self.dll,name).argtypes=args;getattr(self.dll,name).restype=ret
         if self.dll.PdhOpenQueryW(None,0,c.byref(self.query)):raise RuntimeError('Windows 性能计数器未就绪')
         for key,path in paths.items():
@@ -30,7 +31,11 @@ class Counters:
         for key,handle in self.handles.items():
             size=w.DWORD();count=w.DWORD();fmt=0x200|0x8000 # DOUBLE | NOCAP100: process sums are capped only after aggregation.
             self.dll.PdhGetFormattedCounterArrayW(handle,fmt,c.byref(size),c.byref(count),None)
-            if not 0<size.value<=8*1024*1024:continue
+            if not 0<size.value<=8*1024*1024:
+                single=CounterValue()
+                if not self.dll.PdhGetFormattedCounterValue(handle,fmt,None,c.byref(single)) and single.status in (0,1) and math.isfinite(single.value.double) and single.value.double>=0:
+                    result[key]={'_Total':single.value.double}
+                continue
             buffer=c.create_string_buffer(size.value)
             if self.dll.PdhGetFormattedCounterArrayW(handle,fmt,c.byref(size),c.byref(count),buffer):continue
             if count.value>size.value//c.sizeof(Item):continue
@@ -81,6 +86,8 @@ def build_disks(samples,volumes):
         item.pop('idle_percent',None)
         for direction in ('read','write'):
             if item[direction+'_iops']==0:item[direction+'_latency_ms']=None
+        busy=[(item[d+'_iops'],item[d+'_latency_ms']) for d in ('read','write') if item[d+'_iops'] is not None and item[d+'_iops']>0]
+        item['response_latency_ms']=round(sum(rate*latency for rate,latency in busy)/sum(rate for rate,latency in busy),3) if busy and all(latency is not None for rate,latency in busy) else None
         item['free_gb']=round(sum(v['free_gb'] for v in mounted),1) if mounted else None
         item['total_gb']=round(sum(v['total_gb'] for v in mounted),1) if mounted else None
         result.append(item)
@@ -90,6 +97,11 @@ class Performance:
     def __init__(self):
         paths={key:r'\PhysicalDisk(*)\%s'%counter for key,counter in DISK_PATHS.items()}
         paths['gpu']=r'\GPU Engine(*)\Utilization Percentage'
+        paths['gpu_dedicated']=r'\GPU Adapter Memory(*)\Dedicated Usage'
+        paths['gpu_shared']=r'\GPU Adapter Memory(*)\Shared Usage'
+        for key,name in {'standby_core':'Standby Cache Core Bytes','standby_normal':'Standby Cache Normal Priority Bytes',
+                         'standby_reserve':'Standby Cache Reserve Bytes','modified':'Modified Page List Bytes'}.items():
+            paths[key]=chr(92)+'Memory'+chr(92)+name
         self.counters=Counters(paths);self.volumes={};self.volumes_updated=0
     def sample(self):
         raw=self.counters.sample()
@@ -102,5 +114,13 @@ class Performance:
                     volumes[key]={'mount':key,'free_gb':round(usage.free/1073741824,2),'total_gb':round(usage.total/1073741824,2)}
                 except OSError:continue
             self.volumes=volumes;self.volumes_updated=time.monotonic()
-        return {'gpu':aggregate_engines(raw.get('gpu',{})),'disks':build_disks(raw,self.volumes),'errors':dict(self.counters.errors)}
+        gpu_memory={}
+        for key,label in (('gpu_dedicated','dedicated_mb'),('gpu_shared','shared_mb')):
+            for name,value in raw.get(key,{}).items():
+                match=re.search(r'luid_0x([0-9a-f]+)_0x([0-9a-f]+)_phys_(\d+)',name,re.I)
+                if match:gpu_memory.setdefault(tuple(int(v,16) if i<2 else int(v) for i,v in enumerate(match.groups())),{})[label]=round(value/1048576,2)
+        cache=[next(iter(raw.get(key,{}).values()),None) for key in ('standby_core','standby_normal','standby_reserve','modified')]
+        return {'gpu':aggregate_engines(raw.get('gpu',{})),'gpu_memory':gpu_memory,
+                'cached_gb':round(sum(cache)/1073741824,3) if all(v is not None for v in cache) else None,
+                'disks':build_disks(raw,self.volumes),'errors':dict(self.counters.errors)}
     def close(self):self.counters.close()

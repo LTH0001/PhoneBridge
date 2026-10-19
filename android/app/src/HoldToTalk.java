@@ -25,7 +25,7 @@ final class HoldToTalk {
     }
     HoldToTalk(Activity activity,Button button,FrameLayout host,Runnable beforeStart,Runnable afterComplete){
         this.activity=activity;this.button=button;this.beforeStart=beforeStart;this.afterComplete=afterComplete;
-        overlay=new TextView(activity);overlay.setTextSize(17);overlay.setTextColor(HomeStyle.TEXT);
+        overlay=new TextView(activity);overlay.setTextSize(17);overlay.setTextColor(PanelTheme.color(HomeStyle.TEXT));
         overlay.setGravity(Gravity.CENTER);overlay.setPadding(dp(24),dp(18),dp(24),dp(18));
         overlay.setBackground(PanelStyle.card(activity,HomeStyle.ACCENT));overlay.setElevation(dp(10));overlay.setVisibility(View.GONE);
         FrameLayout.LayoutParams slot=new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER);slot.leftMargin=dp(24);slot.rightMargin=dp(24);host.addView(overlay,slot);

@@ -10,6 +10,10 @@ import org.json.JSONObject;
 
 /** Authenticated loopback-only API through the authorized ADB USB tunnel. */
 public final class PanelConnection {
+    private static String route() {
+        BridgeService service=BridgeService.instance;
+        return PanelRoute.choose(service==null?"":service.panelTransport(),AccessoryLink.active(),WirelessLink.active());
+    }
     public static void configure(Context context, Intent intent) {
         String url=intent.getStringExtra("api_url"), token=intent.getStringExtra("api_token");
         if (url == null || token == null) return;
@@ -20,8 +24,9 @@ public final class PanelConnection {
         context.getSharedPreferences("pc_api",Context.MODE_PRIVATE).edit().putString("url",url).putString("token",token).apply();
     }
     public static JSONObject request(Context context,String path,JSONObject body) throws Exception {
-        if(AccessoryLink.active())return AccessoryLink.request(path,body);
-        if(WirelessLink.active())return WirelessLink.request(path,body);
+        String transport=route();
+        if("accessory".equals(transport))return AccessoryLink.request(path,body);
+        if("wireless".equals(transport))return WirelessLink.request(path,body);
         android.content.SharedPreferences preferences=context.getSharedPreferences("pc_api",Context.MODE_PRIVATE);
         String base=preferences.getString("url",""), token=preferences.getString("token","");
         if(base.isEmpty() || token.isEmpty()) throw new IllegalStateException("请先从电脑打开控制面板");
@@ -48,14 +53,16 @@ public final class PanelConnection {
                 }
             }
             JSONObject result=new JSONObject(data.toString("UTF-8"));
+            if(code==401)throw new IllegalStateException("控制面板授权已过期，请从电脑重新打开控制面板");
             if(code>=400) throw new IllegalStateException(result.optString("error","API 错误 "+code));
             return result;
         } finally { connection.disconnect(); }
     }
     public static byte[] artwork(Context context,String key) throws Exception {
         if(!key.matches("[a-f0-9]{24}"))throw new IllegalArgumentException("无效歌曲标识");
-        if(AccessoryLink.active())return android.util.Base64.decode(AccessoryLink.request("/api/music/art?key="+key,null).optString("art"),android.util.Base64.DEFAULT);
-        if(WirelessLink.active()){String bytes=WirelessLink.request("/api/music/art?key="+key,null).optString("art");return android.util.Base64.decode(bytes,android.util.Base64.DEFAULT);}
+        String transport=route();
+        if("accessory".equals(transport))return android.util.Base64.decode(AccessoryLink.request("/api/music/art?key="+key,null).optString("art"),android.util.Base64.DEFAULT);
+        if("wireless".equals(transport)){String bytes=WirelessLink.request("/api/music/art?key="+key,null).optString("art");return android.util.Base64.decode(bytes,android.util.Base64.DEFAULT);}
         android.content.SharedPreferences p=context.getSharedPreferences("pc_api",Context.MODE_PRIVATE);
         HttpURLConnection c=(HttpURLConnection)new URL(p.getString("url","")+"/api/music/art?key="+key).openConnection();
         c.setConnectTimeout(2500);c.setReadTimeout(4000);c.setRequestProperty("Authorization","Bearer "+p.getString("token",""));

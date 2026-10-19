@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState);PanelTheme.apply(this);
         registerReceiver(usbPermission,new android.content.IntentFilter("com.phonebridge.app.USB_PERMISSION"));
 
         buildHome();
@@ -51,14 +51,14 @@ public class MainActivity extends Activity {
 
     private int dp(int n){return HomeStyle.dp(this,n);}
     private TextView text(String value,int size,int color){
-        TextView view=new TextView(this);view.setText(value);view.setTextSize(size);view.setTextColor(color);
+        TextView view=new TextView(this);view.setText(value);view.setTextSize(size);view.setTextColor(PanelTheme.color(color));
         view.setLineSpacing(dp(3),1);return view;
     }
     private LinearLayout column(){LinearLayout view=new LinearLayout(this);view.setOrientation(LinearLayout.VERTICAL);return view;}
     private LinearLayout card(LinearLayout parent){
         LinearLayout view=column();view.setPadding(dp(20),dp(20),dp(20),dp(20));
         android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();
-        bg.setColor(0xffffffff);bg.setCornerRadius(dp(14));bg.setStroke(dp(1),0xffe1e5ec);view.setBackground(bg);
+        bg.setColor(PanelTheme.color(0xffffffff));bg.setCornerRadius(dp(14));bg.setStroke(dp(1),PanelTheme.color(0xffe1e5ec));view.setBackground(bg);
         LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-1,-2);layout.bottomMargin=dp(16);parent.addView(view,layout);return view;
     }
     private void button(LinearLayout parent,String title,boolean primary,View.OnClickListener click){
@@ -67,7 +67,7 @@ public class MainActivity extends Activity {
     }
     private void buildHome(){
         getWindow().setStatusBarColor(HomeStyle.BG);getWindow().setNavigationBarColor(HomeStyle.BG);
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(HomeStyle.BG);
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(PanelTheme.color(HomeStyle.BG));
         LinearLayout root=column();root.setPadding(dp(24),dp(24),dp(24),dp(28));scroll.addView(root);
         LinearLayout brand=new LinearLayout(this);brand.setGravity(Gravity.CENTER_VERTICAL);
         android.widget.ImageView mark=new android.widget.ImageView(this);
@@ -90,7 +90,7 @@ public class MainActivity extends Activity {
         panel.addView(text("查看歌词和硬件状态，调节电脑音量。",13,HomeStyle.MUTED));
         button(panel,"打开控制面板",true,v -> {
             if(!AccessoryLink.active()&&!WirelessLink.active()&&getSharedPreferences("pc_api",MODE_PRIVATE).getString("token","").isEmpty()){
-                new android.app.AlertDialog.Builder(this).setTitle("先从电脑打开一次")
+                PanelTheme.dialog(this).setTitle("先从电脑打开一次")
                     .setMessage("连接电脑后，在桌面端点击“打开手机控制面板”，建立安全连接。之后即可从这里进入。")
                     .setPositiveButton("知道了",null).show();return;
             }
@@ -111,10 +111,11 @@ public class MainActivity extends Activity {
         button(options,"查看手机硬件能力",false,v -> new Thread(() -> {
             String json=CapabilityScanner.scan(this).toString();ui.post(() -> append(pretty(json)));
         },"pb-capabilities").start());
-        button(options,"停止桥接服务",false,v -> new android.app.AlertDialog.Builder(this).setTitle("停止连接？")
+        button(options,"停止桥接服务",false,v -> PanelTheme.dialog(this).setTitle("停止连接？")
             .setMessage("将中断正在使用的手机外设。之后可以重新启动服务。")
             .setNegativeButton("取消",null).setPositiveButton("停止",(d,w) -> {Intent stop=new Intent(this,BridgeService.class);stop.setAction(BridgeService.ACTION_STOP);startService(stop);}).show());
         tvStatus=text("诊断信息仅保留在本页。",11,HomeStyle.MUTED);tvStatus.setTextIsSelectable(true);tvStatus.setPadding(0,dp(14),0,0);options.addView(tvStatus);
+        button(options,"外观主题 · 浅色 / 深色 / 跟随系统",false,v -> PanelTheme.choose(this));
         TextView privacy=text("相机与麦克风按需开启，权限由你确认。",11,HomeStyle.MUTED);privacy.setGravity(Gravity.CENTER);privacy.setPadding(0,dp(6),0,dp(14));root.addView(privacy);
         setContentView(scroll);
     }
@@ -125,7 +126,7 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
-    @Override protected void onResume(){super.onResume();AccessoryLink.attached(this);}
+    @Override protected void onResume(){super.onResume();if(PanelTheme.refresh(this))return;AccessoryLink.attached(this);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);if(android.hardware.usb.UsbManager.ACTION_USB_ACCESSORY_ATTACHED.equals(intent.getAction()))AccessoryLink.retry(this);}
 
     private String pretty(String json) {
@@ -133,9 +134,9 @@ public class MainActivity extends Activity {
     }
 
     private void pairWireless(){
-        android.widget.EditText code=new android.widget.EditText(this);code.setHint("粘贴电脑显示的 pbw1: 配对信息");code.setTextColor(0xff203646);code.setHintTextColor(0xff657987);code.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);code.setMaxLines(4);
+        android.widget.EditText code=new android.widget.EditText(this);code.setHint("粘贴电脑显示的 pbw1: 配对信息");code.setTextColor(PanelTheme.color(0xff203646));code.setHintTextColor(PanelTheme.color(0xff657987));code.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);code.setMaxLines(4);
         code.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);code.setTextSize(14);
-        android.app.AlertDialog dialog=new android.app.AlertDialog.Builder(this).setTitle("连接自己的电脑")
+        android.app.AlertDialog dialog=PanelTheme.dialog(this).setTitle("连接自己的电脑")
             .setMessage("手机和电脑需在可互通的 Wi-Fi。电脑点击无线配对，生成后输入/粘贴完整信息。也可使用主页面的扫码按钮。配对会允许此电脑使用已授权的外设；请勿使用陌生人的配对信息。")
             .setView(code).setNegativeButton("取消",(d,w) -> WirelessLink.close()).setPositiveButton("连接",null).create();
         dialog.setOnCancelListener(d -> WirelessLink.close());
@@ -148,7 +149,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request==9&&result==RESULT_OK&&data!=null){
         String invitation=data.getStringExtra("invitation");
-        new android.app.AlertDialog.Builder(this).setTitle("连接这台电脑？").setMessage("仅连接你自己的电脑。配对允许使用已授权的摄像头、麦克风、触屏及控制面板；可随时断开。")
+        PanelTheme.dialog(this).setTitle("连接这台电脑？").setMessage("仅连接你自己的电脑。配对允许使用已授权的摄像头、麦克风、触屏及控制面板；可随时断开。")
             .setNegativeButton("取消",null).setPositiveButton("确认连接",(d,w) -> new Thread(() -> {try{WirelessLink.pair(this,invitation);}catch(Exception e){ui.post(() -> android.widget.Toast.makeText(this,"配对失败，请检查网络和配对有效期",1).show());}},"pb-qr-pair").start()).show();
     }}
 
@@ -163,7 +164,7 @@ public class MainActivity extends Activity {
                 org.json.JSONObject s=svc==null?new org.json.JSONObject():svc.statusJson();
                 boolean running=s.optBoolean("service_running"),connected=s.optInt("clients")>0;
                 connectionTitle.setText(connected?"●  已连接电脑":running?"●  等待电脑连接":"○  桥接服务已停止");
-                connectionTitle.setTextColor(connected?HomeStyle.ACCENT:HomeStyle.TEXT);
+                connectionTitle.setTextColor(PanelTheme.color(connected?HomeStyle.ACCENT:HomeStyle.TEXT));
                 connectionNote.setText(connected?(AccessoryLink.active()?"USB 外设通道已建立":WirelessLink.active()?"无线安全通道已建立":"USB 调试通道已建立"):
                     running?"手机已就绪。请在电脑端选择手机，点击连接。":"点击下方“启动 / 恢复桥接服务”重新连接。");
                 trafficState.setText(String.format(java.util.Locale.CHINA,"发送 %.1f MB    接收 %.1f MB",s.optLong("tx_bytes")/1048576.0,s.optLong("rx_bytes")/1048576.0));
@@ -171,7 +172,7 @@ public class MainActivity extends Activity {
                 boolean camOn=camera!=null&&camera.optBoolean("running"),micOn=mic!=null&&mic.optBoolean("running");
                 cameraState.setText("摄像头\n"+(camOn?String.format(java.util.Locale.CHINA,"%.0f FPS · 采集中",camera.optDouble("fps")):"未启动"));
                 microphoneState.setText("麦克风\n"+(micOn?"采集中":"未启动"));
-                cameraState.setTextColor(camOn?HomeStyle.ACCENT:HomeStyle.TEXT);microphoneState.setTextColor(micOn?HomeStyle.ACCENT:HomeStyle.TEXT);
+                cameraState.setTextColor(PanelTheme.color(camOn?HomeStyle.ACCENT:HomeStyle.TEXT));microphoneState.setTextColor(PanelTheme.color(micOn?HomeStyle.ACCENT:HomeStyle.TEXT));
             } catch (Throwable t) { }
             ui.postDelayed(this, 1000);
         }

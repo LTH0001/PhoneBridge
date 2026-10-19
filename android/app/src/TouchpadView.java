@@ -21,20 +21,20 @@ final class TouchpadView extends View {
     private void drawNumbers(Canvas c){
         for(NumberPadLayout.Key key:NumberPadLayout.KEYS){float[] b=NumberPadLayout.bounds(key,getWidth(),getHeight(),dp(8),dp(2));
             boolean special=key.value.equals("enter"),pressed=key==numberKey&&!numberCancelled;
-            paint.setStyle(Paint.Style.FILL);paint.setColor(!isEnabled()?0xffedf0f4:pressed?0xffd3e5ff:special?0xffe1ecfd:0xfff9fbfe);c.drawRoundRect(b[0],b[1],b[2],b[3],dp(9),dp(9),paint);
-            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));paint.setColor(special?0xffa2bfeb:0xffdce4ef);c.drawRoundRect(b[0],b[1],b[2],b[3],dp(9),dp(9),paint);
-            paint.setStyle(Paint.Style.FILL);paint.setColor(isEnabled()?(special?HomeStyle.ACCENT:HomeStyle.TEXT):HomeStyle.MUTED);paint.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));paint.setTextAlign(Paint.Align.CENTER);
+            paint.setStyle(Paint.Style.FILL);paint.setColor(PanelTheme.color(!isEnabled()?0xffedf0f4:pressed?0xffd3e5ff:special?0xffe1ecfd:0xfff9fbfe));c.drawRoundRect(b[0],b[1],b[2],b[3],dp(9),dp(9),paint);
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));paint.setColor(PanelTheme.color(special?0xffa2bfeb:0xffdce4ef));c.drawRoundRect(b[0],b[1],b[2],b[3],dp(9),dp(9),paint);
+            paint.setStyle(Paint.Style.FILL);paint.setColor(PanelTheme.color(isEnabled()?(special?HomeStyle.ACCENT:HomeStyle.TEXT):HomeStyle.MUTED));paint.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));paint.setTextAlign(Paint.Align.CENTER);
             paint.setTextSize(Math.min(dp(24),(b[3]-b[1])*.55f));Paint.FontMetrics f=paint.getFontMetrics();c.drawText(key.label,(b[0]+b[2])/2,(b[1]+b[3]-f.ascent-f.descent)/2,paint);
         }
         paint.setTypeface(Typeface.DEFAULT);
     }
     @Override protected void onDraw(Canvas c){
-        paint.setColor(isEnabled()?0xffffffff:0xffeef1f5);c.drawRoundRect(0,0,getWidth(),getHeight(),dp(16),dp(16),paint);
-        paint.setColor(0xffe0e5ed);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));c.drawRoundRect(dp(1),dp(1),getWidth()-dp(1),getHeight()-dp(1),dp(16),dp(16),paint);paint.setStyle(Paint.Style.FILL);
+        paint.setColor(PanelTheme.color(isEnabled()?0xffffffff:0xffeef1f5));c.drawRoundRect(0,0,getWidth(),getHeight(),dp(16),dp(16),paint);
+        paint.setColor(PanelTheme.color(0xffe0e5ed));paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));c.drawRoundRect(dp(1),dp(1),getWidth()-dp(1),getHeight()-dp(1),dp(16),dp(16),paint);paint.setStyle(Paint.Style.FILL);
         if(numberMode){drawNumbers(c);return;}
-        paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(dp(18));paint.setColor(HomeStyle.TEXT);
+        paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(dp(18));paint.setColor(PanelTheme.color(HomeStyle.TEXT));
         c.drawText(!isEnabled()?"启用后在此移动电脑鼠标":dragging?"正在拖动":"触控板",getWidth()/2f,getHeight()/2f-dp(8),paint);
-        paint.setTextSize(dp(12));paint.setColor(HomeStyle.MUTED);c.drawText("单指移动 / 轻点点击    双指滚动 / 轻点右键",getWidth()/2f,getHeight()/2f+dp(22),paint);
+        paint.setTextSize(dp(12));paint.setColor(PanelTheme.color(HomeStyle.MUTED));c.drawText("单指移动 / 轻点点击    双指滚动 / 轻点右键",getWidth()/2f,getHeight()/2f+dp(22),paint);
     }
     @Override public boolean onTouchEvent(MotionEvent e){
         if(!isEnabled())return true;

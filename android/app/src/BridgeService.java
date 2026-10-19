@@ -36,6 +36,8 @@ public class BridgeService extends Service {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicInteger clientCount = new AtomicInteger(0);
+    private final PanelRoute panelRoute = new PanelRoute();
+    String panelTransport(){return panelRoute.current();}
     private final AtomicLong txBytes = new AtomicLong(0);
     private final AtomicLong rxBytes = new AtomicLong(0);
 
@@ -121,6 +123,7 @@ public class BridgeService extends Service {
                         clients[streamId - 1] = s;
                     }
                     clientCount.incrementAndGet();
+                    if(streamId==1)panelRoute.activate(s,"usb");
                     new Thread(() -> handleChannel(s, streamId), "pb-ch-" + port).start();
                 } catch (IOException e) {
                     if (running.get()) Log.w(TAG, "accept " + port, e);
@@ -173,13 +176,15 @@ public class BridgeService extends Service {
                 if (clients[streamId - 1] == socket) clients[streamId - 1] = null;
             }
             clientCount.decrementAndGet();
+            panelRoute.deactivate(socket);
             if(WirelessLink.active() && streamId==1)WirelessLink.close();
         }
     }
 
     void acceptWireless(Socket socket,int sid)throws IOException{
         synchronized(clients){if(clients[sid-1]!=null)throw new IOException("已有 USB / 无线通道，请先断开");clients[sid-1]=socket;}
-        clientCount.incrementAndGet();new Thread(() -> handleChannel(socket,sid),"pb-wireless-"+sid).start();
+        clientCount.incrementAndGet();if(sid==1)panelRoute.activate(socket,"wireless");
+        new Thread(() -> handleChannel(socket,sid),"pb-wireless-"+sid).start();
     }
 
     void serveAccessory(InputStream input,OutputStream output)throws Exception{
@@ -190,9 +195,9 @@ public class BridgeService extends Service {
             byte[] header=new byte[36];readFully(input,header);java.nio.ByteBuffer h=java.nio.ByteBuffer.wrap(header).order(java.nio.ByteOrder.LITTLE_ENDIAN);
             int size=h.getInt(32),sid=h.getInt(8);if(h.getInt(0)!=0x31304250||h.getShort(4)!=1||size<0||size>16*1024*1024||sid<1||sid>5)throw new IOException("无效 USB 帧");
             byte[] packet=new byte[36+size];System.arraycopy(header,0,packet,0,36);byte[] payload=new byte[size];readFully(input,payload);System.arraycopy(payload,0,packet,36,size);Proto.Frame frame=Proto.readFrame(packet,0,packet.length);
-            if(sid==1)dispatch(frame,output);else if(sid==2&&frame.type==0x2001){DisplayReceiver receiver=display;if(receiver!=null)receiver.feed(payload);}
+            if(sid==1){panelRoute.activate(output,"accessory");dispatch(frame,output);}else if(sid==2&&frame.type==0x2001){DisplayReceiver receiver=display;if(receiver!=null)receiver.feed(payload);}
             else if(sid==5&&frame.type==0xc1)AccessoryLink.response(frame);else throw new IOException("USB 通道不匹配");
-        }}finally{mineCamera.close();mineAudio.stop();mineSensors.close();camera=null;audio=null;sensors=null;sensorOutput=null;if(display!=null){display.stop();display=null;}clientCount.decrementAndGet();}
+        }}finally{panelRoute.deactivate(output);mineCamera.close();mineAudio.stop();mineSensors.close();camera=null;audio=null;sensors=null;sensorOutput=null;if(display!=null){display.stop();display=null;}clientCount.decrementAndGet();}
     }
 
     /** 阻塞读, 统计 rx 字节; 连接关闭时返回 */
@@ -455,6 +460,7 @@ public class BridgeService extends Service {
         try {
             o.put("service_running", running.get());
             o.put("clients", clientCount.get());
+            o.put("control_transport",panelTransport());
             o.put("tx_bytes", txBytes.get());
             o.put("rx_bytes", rxBytes.get());
             o.put("uptime_ms", SystemClock.elapsedRealtime() - startTime);

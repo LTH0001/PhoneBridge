@@ -50,7 +50,7 @@ final class PanelNavigation {
         new Thread(() -> {try{PanelConnection.request(activity,"/api/dashboard/desktop",new JSONObject());activity.runOnUiThread(() -> activity.finish());}
             catch(Exception error){activity.runOnUiThread(() -> Toast.makeText(activity,"返回副屏失败："+error.getMessage(),Toast.LENGTH_LONG).show());}},"pb-nav-desktop").start();
     }
-    static void help(Activity activity){new android.app.AlertDialog.Builder(activity).setTitle("触控板式导航")
+    static void help(Activity activity){PanelTheme.dialog(activity).setTitle("触控板式导航")
         .setMessage("双指右滑 / 左边缘右滑：返回上页\n三指上滑：控制面板主页\n三指下滑：电脑触控副屏\n详情双指上下滑：滚动参数\n单指上下滑：面板/歌词页音量\n\n若 vivo 三指截屏抢占手势，请使用页面按钮，或在手机自行关闭三指截屏。手势只在 PhoneBridge 面板页面生效。")
         .setPositiveButton("知道了",null).show();}
 }

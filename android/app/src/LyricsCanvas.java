@@ -48,7 +48,7 @@ final class LyricsCanvas extends View {
         if(scroll<0||Math.abs(scroll-anchorIndex)>2)scroll=anchorIndex;
         else scroll+=(anchorIndex-scroll)*Math.min(1,elapsed);
         if(lines.length()==0){
-            paint.setColor(compact?0xff647082:0xff647380);paint.setTextSize(dp(compact?11:17));
+            paint.setColor(PanelTheme.color(compact?0xff647082:0xff647380));paint.setTextSize(dp(compact?11:17));
             String text="instrumental".equals(data.optString("state"))?"此曲为纯音乐，请欣赏":"loading".equals(data.optString("state"))?"正在寻找这首歌的同步歌词…":"暂无同步歌词，可在电脑导入 LRC";
             if(compact){text="instrumental".equals(data.optString("state"))?"纯音乐 · 静静欣赏":"loading".equals(data.optString("state"))?"正在寻找同步歌词…":"点击进入歌词页 / 导入 LRC";}
             c.drawText(text,getWidth()/2f,getHeight()/2f,paint);
@@ -58,7 +58,7 @@ final class LyricsCanvas extends View {
             for(int i=from;i<=to;i++){
                 float distance=Math.abs(i-scroll);if(distance>3.1f)continue;
                 String text=lines.optJSONObject(i).optString("text");boolean selected=i==current;
-                paint.setColor(compact?(selected?0xff376bc1:0xff647082):(selected?0xff247dae:0xff62717c));paint.setAlpha((int)(255*Math.max(.15,1-distance*.26)));
+                paint.setColor(PanelTheme.color(compact?(selected?0xff376bc1:0xff647082):(selected?0xff247dae:0xff62717c)));paint.setAlpha((int)(255*Math.max(.15,1-distance*.26)));
                 paint.setTypeface(selected?Typeface.create("sans-serif-medium",Typeface.NORMAL):Typeface.create("sans-serif",Typeface.NORMAL));
                 paint.setTextSize(dp(compact?(selected?17:12):(selected?24:17)));
                 float width=getWidth()-dp(compact?12:120);
@@ -68,11 +68,11 @@ final class LyricsCanvas extends View {
             }
             c.restore();
         }
-        paint.setAlpha(255);paint.setTypeface(Typeface.DEFAULT);paint.setTextSize(dp(10));paint.setColor(0xff6c7d87);
+        paint.setAlpha(255);paint.setTypeface(Typeface.DEFAULT);paint.setTextSize(dp(10));paint.setColor(PanelTheme.color(0xff6c7d87));
         if(compact){if(isShown()&&(playing||Math.abs(scroll-anchorIndex)>.01))postInvalidateOnAnimation();return;}
         c.drawText(String.format(Locale.US,"%02d:%02d  /  %02d:%02d",(int)position/60,(int)position%60,(int)duration/60,(int)duration%60),getWidth()/2f,getHeight()-dp(4),paint);
         float left=dp(100),right=getWidth()-dp(100),y=getHeight()-dp(21);paint.setStrokeWidth(dp(2));
-        paint.setColor(0x22446377);c.drawLine(left,y,right,y,paint);paint.setColor(0xff4b9cc2);
+        paint.setColor(PanelTheme.color(0x22446377));c.drawLine(left,y,right,y,paint);paint.setColor(PanelTheme.color(0xff4b9cc2));
         if(duration>0)c.drawLine(left,y,left+(right-left)*(float)(position/duration),y,paint);
         if(isShown()&&(playing||Math.abs(scroll-anchorIndex)>.01))postInvalidateOnAnimation();
     }

@@ -9,6 +9,7 @@ from pathlib import Path
 from .cpu_temperature import read_temperature
 from .performance import Performance
 from .gpu_identity import adapter_addresses,match_adapter
+from .host_details import HardwareDetails,fields,BASELINE
 
 class Utilization(c.Structure): _fields_=[('gpu',c.c_uint),('memory',c.c_uint)]
 class MemoryInfo(c.Structure): _fields_=[('total',c.c_ulonglong),('free',c.c_ulonglong),('used',c.c_ulonglong)]
@@ -95,6 +96,7 @@ class HostTelemetry:
         self.value={'updated_at':None,'cpu':{'name':'CPU','load_percent':None,'temperature_c':None},
                     'memory':{},'gpus':[],'error':''}
         self.history=[]
+        self.details=HardwareDetails()
         self.thread=threading.Thread(target=self._sample,name='pb-host-telemetry',daemon=True)
         self.thread.start()
 
@@ -130,7 +132,12 @@ class HostTelemetry:
                                  'cached_gb':round(memory.cached/1073741824,1) if hasattr(memory,'cached') else None,
                                  'swap_used_gb':round(swap.used/1073741824,1),'swap_total_gb':round(swap.total/1073741824,1)},'gpus':devices,'disks':extra['disks'],
                        'performance_errors':extra['errors'],'error':error}
-                point={'time':value['updated_at'],'cpu':value['cpu']['load_percent'],'memory':memory.percent,
+                value['memory']['cached_gb']=extra.get('cached_gb')
+                try:value=self.details.enrich(value,extra)
+                except Exception as exc:value['hardware_note']='档案采样暂不可用：'+type(exc).__name__
+                point={'time':value['updated_at'],'cpu':value['cpu']['load_percent'],'cpu_cores':value['cpu']['core_load_percent'],'memory':memory.percent,
+                       'networks':[{k:n.get(k) for k in ('index','send_mbps','receive_mbps','load_percent')} for n in value.get('networks',[])],
+                       'npus':[{'index':n['index'],'load_percent':n.get('load_percent')} for n in value.get('npus',[])],
                        'gpus':[{'index':g['index'],'load_percent':g['load_percent'],'temperature_c':g['temperature_c'],'engines':g['engines']} for g in devices],
                        'disks':[{'index':d['index'],**{key:d[key] for key in ('load_percent','read_mbps','write_mbps','read_latency_ms','write_latency_ms')}} for d in extra['disks']]}
                 with self.lock:
@@ -147,19 +154,22 @@ class HostTelemetry:
         with self.lock: return copy.deepcopy(self.value)
 
     def detail(self,kind,index=0):
-        if kind not in ('cpu','memory','gpu','disk'):raise ValueError('未知硬件详情')
+        if kind not in BASELINE:raise ValueError('未知硬件详情')
         if isinstance(index,bool) or not isinstance(index,int) or not 0<=index<16:raise ValueError('无效显卡编号')
         with self.lock:
             value=copy.deepcopy(self.value)
             history=copy.deepcopy(self.history)
-        if kind in ('gpu','disk'):
-            collection='gpus' if kind=='gpu' else 'disks'
+        if kind in ('gpu','disk','network','npu'):
+            collection={'gpu':'gpus','disk':'disks','network':'networks','npu':'npus'}[kind]
             metric=next((g for g in value.get(collection,[]) if g['index']==index),None)
             if metric is None:raise ValueError('设备已不可用')
             points=[{'time':p['time'],**next((g for g in p.get(collection,[]) if g['index']==index),{'load_percent':None})} for p in history]
         else:
-            metric=value[kind];points=[{'time':p['time'],'load_percent':p[kind]} for p in history]
-        return {'kind':kind,'index':index,'metric':metric,'history':points,'error':value['error']}
+            metric=value[kind];points=[{'time':p['time'],'load_percent':p[kind],**({'core_load_percent':p.get('cpu_cores',[])} if kind=='cpu' else {})} for p in history]
+        return {'kind':kind,'index':index,'metric':metric,'history':points,'error':value['error'],
+                'fields':fields(kind,metric),'baseline_fields':list(BASELINE[kind]),
+                'note':'字段覆盖基准不表示驱动已提供全部值；未读取到的值保持不可用，来源/统计口径可能与任务管理器不同。'}
 
     def close(self):
         self.closed.set(); self.thread.join(3)
+        if hasattr(self,'details'):self.details.close()

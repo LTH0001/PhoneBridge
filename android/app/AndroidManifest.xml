@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.phonebridge.app"
-    android:versionCode="21"
-    android:versionName="0.8.10">
+    android:versionCode="24"
+    android:versionName="0.8.13">
     <queries>
         <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
         <intent><action android:name="android.speech.RecognitionService" /></intent>
@@ -57,6 +57,7 @@
         <activity android:name=".DetailActivity" android:exported="false"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity android:name=".HardwareActivity" android:exported="false" android:theme="@style/PhoneBridgeTheme" android:screenOrientation="sensorLandscape" />
         <activity android:name=".SystemActivity" android:exported="false"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|keyboardHidden" />

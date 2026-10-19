@@ -38,8 +38,9 @@ public final class DetailActivity extends Activity {
     private String graphField="load_percent";
 
     @Override public void onCreate(Bundle state) {
-        super.onCreate(state);kind=getIntent().getStringExtra("kind");index=getIntent().getIntExtra("index",0);
-        if(!"music".equals(kind)&&!"cpu".equals(kind)&&!"memory".equals(kind)&&!"gpu".equals(kind)){finish();return;}
+        super.onCreate(state);PanelTheme.apply(this);kind=getIntent().getStringExtra("kind");index=getIntent().getIntExtra("index",0);
+        if(!"music".equals(kind)&&!"cpu".equals(kind)&&!"memory".equals(kind)&&!"gpu".equals(kind)&&!"disk".equals(kind)&&!"network".equals(kind)&&!"npu".equals(kind)){finish();return;}
+        if("network".equals(kind))graphField="receive_mbps";
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if(android.os.Build.VERSION.SDK_INT>=28) {
             WindowManager.LayoutParams attributes=getWindow().getAttributes();attributes.layoutInDisplayCutoutMode=android.os.Build.VERSION.SDK_INT>=30?3:1;getWindow().setAttributes(attributes);
@@ -64,6 +65,15 @@ public final class DetailActivity extends Activity {
         playback.attach(root);
         note=label(music?"↑ 加音量 · ↓ 减音量 · 校准可调整歌词时间":"约 60 秒历史 · 每秒采样 · 右侧详情可上下滚动",11,music?0xff647987:MUTED);
         root.addView(note,new LinearLayout.LayoutParams(-1,dp(27)));
+        if("cpu".equals(kind)){
+            LinearLayout modes=new LinearLayout(this);
+            modes.addView(button("总体利用率",v -> {graphField="load_percent";graph.invalidate();}),new LinearLayout.LayoutParams(0,dp(30),1));
+            modes.addView(button("每个逻辑处理器",v -> {graphField="core_load_percent";graph.invalidate();}),new LinearLayout.LayoutParams(0,dp(30),1));root.addView(modes);
+        }
+        if("network".equals(kind)){
+            LinearLayout modes=new LinearLayout(this);modes.addView(button("接收 Mbps",v -> {graphField="receive_mbps";graph.invalidate();}),new LinearLayout.LayoutParams(0,dp(30),1));
+            modes.addView(button("发送 Mbps",v -> {graphField="send_mbps";graph.invalidate();}),new LinearLayout.LayoutParams(0,dp(30),1));root.addView(modes);
+        }
         if("gpu".equals(kind)){
             LinearLayout modes=new LinearLayout(this);
             String[] names={"整体","3D / 渲染","视频编码","视频解码","复制"};String[] fields={"load_percent","three_d_percent","video_encode_percent","video_decode_percent","copy_percent"};
@@ -81,7 +91,7 @@ public final class DetailActivity extends Activity {
             LinearLayout body=new LinearLayout(this);LinearLayout.LayoutParams bodyLayout=new LinearLayout.LayoutParams(-1,0,1);bodyLayout.topMargin=dp(4);root.addView(body,bodyLayout);
             graph=new HistoryGraph();body.addView(graph,new LinearLayout.LayoutParams(0,-1,.57f));
             ScrollView scroll=new ScrollView(this);LinearLayout.LayoutParams scrollLayout=new LinearLayout.LayoutParams(0,-1,.43f);scrollLayout.leftMargin=dp(18);body.addView(scroll,scrollLayout);
-            metrics=label("读取数据…",14,TEXT);metrics.setGravity(Gravity.TOP);scroll.addView(metrics);
+            metrics=label("读取数据…",14,TEXT);metrics.setGravity(Gravity.TOP);metrics.setTextIsSelectable(true);scroll.addView(metrics);
         }
         setContentView(root);
     }
@@ -106,7 +116,7 @@ public final class DetailActivity extends Activity {
     }
     private void askConsent() {
         if(consentAsked)return;consentAsked=true;
-        new AlertDialog.Builder(this).setTitle("允许联网查询同步歌词？")
+        PanelTheme.dialog(this).setTitle("允许联网查询同步歌词？")
             .setMessage("向 LRCLIB 只查询当前歌曲名称和歌手，不发送音频、账户信息或播放历史。允许后以后进入歌词页也可查询；可在电脑版设置中关闭。查不到时可在电脑导入 LRC。")
             .setPositiveButton("允许",(d,w) -> loadLyrics(true)).setNegativeButton("仅本地歌词",null).show();
     }
@@ -148,8 +158,8 @@ public final class DetailActivity extends Activity {
     }
     private void hardware(JSONObject data) {
         JSONObject metric=data.optJSONObject("metric");if(metric==null)return;
-        String name="cpu".equals(kind)?metric.optString("name","CPU"):"gpu".equals(kind)?metric.optString("name","GPU"):"内存";
-        if("gpu".equals(kind))name="GPU "+(index+1)+" · "+name;
+        String name="memory".equals(kind)?"内存":metric.optString("name",metric.optString("model","硬件详情"));
+        if("gpu".equals(kind))name="GPU "+index+" · "+name;
         title.setText(name+"  ·  "+number(metric,"load_percent","%"));
         StringBuilder text=new StringBuilder();text.append("当前占用   ").append(number(metric,"load_percent","%"));
         if("cpu".equals(kind)) {
@@ -180,7 +190,7 @@ public final class DetailActivity extends Activity {
             text.append("\n分页文件报告总量   ").append(number(metric,"swap_total_gb"," GiB"));
             text.append("\n\n数据来源 psutil；与任务管理器的压缩/已提交内存不是完全相同的指标。");
         }
-        metrics.setText(text);graph.update(data.optJSONArray("history"));
+        String complete=HardwareFields.format(data);metrics.setText(complete.isEmpty()?text:complete);graph.update(data.optJSONArray("history"));
     }
     private final class HistoryGraph extends View {
         private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);private JSONArray points=new JSONArray();
@@ -188,23 +198,36 @@ public final class DetailActivity extends Activity {
         void update(JSONArray data){if(data!=null)points=data;invalidate();}
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);float left=dp(32),top=dp(18),right=getWidth()-dp(8),bottom=getHeight()-dp(28);
-            paint.setColor(0xfff3f5f8);paint.setStyle(Paint.Style.FILL);canvas.drawRect(left,top,right,bottom,paint);
-            paint.setColor(0xffdde3ec);paint.setStrokeWidth(dp(1));
+            if("core_load_percent".equals(graphField)){drawCores(canvas);return;}
+            float maximum=100;
+            if("network".equals(kind)){maximum=1;for(int i=0;i<points.length();i++){JSONObject p=points.optJSONObject(i);if(p!=null&&!p.isNull(graphField))maximum=Math.max(maximum,(float)p.optDouble(graphField,0)*1.15f);}}
+            paint.setColor(PanelTheme.surface());paint.setStyle(Paint.Style.FILL);canvas.drawRect(left,top,right,bottom,paint);
+            paint.setColor(PanelTheme.grid());paint.setStrokeWidth(dp(1));
             for(int i=0;i<=6;i++){float x=left+(right-left)*i/6;canvas.drawLine(x,top,x,bottom,paint);}
             for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4;canvas.drawLine(left,y,right,y,paint);}
-            paint.setColor(MUTED);paint.setTextSize(dp(10));canvas.drawText("100%",0,top+dp(4),paint);canvas.drawText("0",dp(17),bottom,paint);
+            paint.setColor(PanelTheme.muted());paint.setTextSize(dp(10));canvas.drawText("network".equals(kind)?String.format(Locale.US,"%.1f",maximum):"100%",0,top+dp(4),paint);canvas.drawText("0",dp(17),bottom,paint);
             canvas.drawText("60 秒",left,bottom+dp(19),paint);canvas.drawText("现在",right-dp(25),bottom+dp(19),paint);
             Path path=new Path();boolean started=false;
             for(int i=0;i<points.length();i++) {
                 JSONObject point=points.optJSONObject(i);JSONObject series=point;
-                if(!"load_percent".equals(graphField)&&point!=null)series=point.optJSONObject("engines");
+                if("gpu".equals(kind)&&!"load_percent".equals(graphField)&&point!=null)series=point.optJSONObject("engines");
                 if(series==null||!series.has(graphField)||series.isNull(graphField)){started=false;continue;}
                 float x=right-(59-(60-points.length()+i))*(right-left)/59;
-                float value=(float)Math.max(0,Math.min(100,series.optDouble(graphField)));
-                float y=bottom-(bottom-top)*value/100;
+                float value=(float)Math.max(0,Math.min(maximum,series.optDouble(graphField)));
+                float y=bottom-(bottom-top)*value/maximum;
                 if(!started){path.moveTo(x,y);started=true;}else path.lineTo(x,y);
             }
-            paint.setColor(ACCENT);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(2));canvas.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);
+            paint.setColor(PanelTheme.color(ACCENT));paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(2));canvas.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);
+        }
+        private void drawCores(Canvas canvas){
+            int count=0;for(int i=points.length()-1;i>=0;i--){JSONArray loads=points.optJSONObject(i).optJSONArray("core_load_percent");if(loads!=null){count=Math.min(256,loads.length());break;}}
+            if(count==0){paint.setColor(PanelTheme.muted());paint.setTextSize(dp(12));canvas.drawText("逻辑处理器历史正在预热",dp(16),dp(40),paint);return;}
+            int columns=(int)Math.ceil(Math.sqrt(count)),rows=(count+columns-1)/columns;float width=(getWidth()-dp(8))/columns,height=(getHeight()-dp(8))/rows;
+            for(int core=0;core<count;core++){float l=(core%columns)*width+dp(3),t=(core/columns)*height+dp(3),r=l+width-dp(6),b=t+height-dp(6);
+                paint.setStyle(Paint.Style.FILL);paint.setColor(PanelTheme.surface());canvas.drawRect(l,t,r,b,paint);paint.setColor(PanelTheme.grid());paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));canvas.drawRect(l,t,r,b,paint);
+                Path path=new Path();boolean start=false;for(int i=0;i<points.length();i++){JSONArray loads=points.optJSONObject(i).optJSONArray("core_load_percent");if(loads==null||loads.isNull(core)){start=false;continue;}float x=r-(59-(60-points.length()+i))*(r-l)/59,y=b-(b-t)*(float)Math.max(0,Math.min(100,loads.optDouble(core)))/100;if(!start){path.moveTo(x,y);start=true;}else path.lineTo(x,y);}
+                paint.setColor(PanelTheme.accent());paint.setStrokeWidth(dp(1));canvas.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);paint.setColor(PanelTheme.text());paint.setTextSize(dp(9));canvas.drawText("CPU "+core,l+dp(3),t+dp(12),paint);
+            }
         }
     }
     private void updateTiming(){if(timing!=null)timing.setText(String.format(Locale.US,"校准 %+.1fs",lyrics.offset()));}
@@ -215,19 +238,19 @@ public final class DetailActivity extends Activity {
         for(String text:new String[]{"歌词提前 0.2 秒","歌词延后 0.2 秒","恢复默认"}){
             Button b=button(text,v -> {lyrics.shift(text.startsWith("歌词提前")?.2:-.2,text.equals("恢复默认"));amount.setText(String.format(Locale.US,"当前偏移 %+.1f 秒",lyrics.offset()));updateTiming();});options.addView(b);
         }
-        new AlertDialog.Builder(this).setTitle("歌词时间校准").setView(options).setNegativeButton("完成",null).show();
+        PanelTheme.dialog(this).setTitle("歌词时间校准").setView(options).setNegativeButton("完成",null).show();
     }
     private void loadArt(String key){
         worker.execute(() -> {try{byte[] bytes=PanelConnection.artwork(this,key);android.graphics.Bitmap bitmap=android.graphics.BitmapFactory.decodeByteArray(bytes,0,bytes.length);
             ui.post(() -> {if(active&&key.equals(artKey))backdrop.setArt(bitmap);});}catch(Exception ignored){}});
     }
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
-    private TextView label(String text,int size,int color){TextView v=new TextView(this);v.setText(text);v.setTextSize(size);v.setTextColor(color);v.setGravity(Gravity.CENTER_VERTICAL);return v;}
+    private TextView label(String text,int size,int color){TextView v=new TextView(this);v.setText(text);v.setTextSize(size);v.setTextColor(PanelTheme.color(color));v.setGravity(Gravity.CENTER_VERTICAL);return v;}
     private Button button(String text,View.OnClickListener listener){return PanelStyle.button(this,text,"music".equals(kind),listener);}
     private void immersive(){PanelStyle.immersive(this);}
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)immersive();}
     @Override public boolean dispatchTouchEvent(android.view.MotionEvent event){if(navigation!=null&&navigation.touch(event,e -> super.dispatchTouchEvent(e)))return true;return super.dispatchTouchEvent(event);}
-    @Override protected void onResume(){super.onResume();active=true;ui.removeCallbacks(poll);ui.postDelayed(poll,200);}
+    @Override protected void onResume(){super.onResume();if(PanelTheme.refresh(this))return;active=true;ui.removeCallbacks(poll);ui.postDelayed(poll,200);}
     @Override protected void onPause(){active=false;ui.removeCallbacks(poll);super.onPause();}
     @Override public void onDestroy(){active=false;ui.removeCallbacksAndMessages(null);worker.shutdownNow();if(playback!=null)playback.close();super.onDestroy();}
 }

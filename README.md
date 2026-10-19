@@ -4,7 +4,11 @@
 
 PhoneBridge includes a Windows host, an Android companion app, and a local API. Project-owned code is licensed under MIT; third-party components retain their own licenses.
 
-当前版本 **0.8.10 · 开发预览**。面向 Windows 11 x64 / Android 8.0+（最低 API 26）；实际完整功能只在有限设备上验证，不能视为所有机型兼容。尚未提供正式签名安装器。
+当前版本 **0.8.13 · 开发预览**。面向 Windows 11 x64 / Android 8.0+（最低 API 26）；实际完整功能只在有限设备上验证，不能视为所有机型兼容。尚未提供正式签名安装器。
+
+手机“全部硬件”可查看 CPU、内存、全部 GPU（含核显）、物理磁盘、网卡及系统识别到的 NPU。详情保留任务管理器性能页的基础字段并补充档案、历史与诊断；字段存在不等于驱动提供了数值，未接入的压缩内存/NPU 性能计数器会明确标注。网卡地址仅展示给已授权的本地面板，不提交到仓库或外部服务。
+
+外观支持浅色、深色、跟随系统：电脑端在左侧“外观主题”选择；手机控制面板点击“外观”，手机首页也有入口。两端各自记住偏好，不共享认证信息，不改变系统权限；手机切换会重建当前面板页面，按住说话等交互会按生命周期结束。
 
 ## 功能与边界
 

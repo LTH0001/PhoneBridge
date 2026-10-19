@@ -15,12 +15,12 @@ public final class StorageActivity extends Activity {
     private boolean active;private int selected=-1;private PanelNavigation navigation;
     private LinearLayout drives;private TextView title,note,metrics;private TrafficGraph graph;private String driveSignature="";
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        super.onCreate(state);PanelTheme.apply(this);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if(Build.VERSION.SDK_INT>=28){WindowManager.LayoutParams a=getWindow().getAttributes();a.layoutInDisplayCutoutMode=Build.VERSION.SDK_INT>=30?3:1;getWindow().setAttributes(a);}
         PanelStyle.immersive(this);build();navigation=new PanelNavigation(this,() -> finish(),() -> PanelNavigation.panel(this),() -> PanelNavigation.desktop(this));
     }
     private int dp(int n){return PanelStyle.dp(this,n);}
-    private TextView label(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setGravity(Gravity.CENTER_VERTICAL);return t;}
+    private TextView label(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(PanelTheme.color(color));t.setGravity(Gravity.CENTER_VERTICAL);return t;}
     private String number(JSONObject obj,String key,String unit){return obj.has(key)&&!obj.isNull(key)?String.format(Locale.US,"%.1f",obj.optDouble(key))+unit:"—";}
     private void build(){
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(16),dp(8),dp(16),dp(8));root.setBackground(PanelStyle.background());
@@ -44,7 +44,7 @@ public final class StorageActivity extends Activity {
                 LinearLayout.LayoutParams slot=new LinearLayout.LayoutParams(-1,dp(78));slot.bottomMargin=dp(8);drives.addView(b,slot);
             }
         }
-        for(int i=0;i<devices.length();i++){JSONObject d=devices.optJSONObject(i);Button b=(Button)drives.getChildAt(i);b.setText(d.optString("name")+"\n读 "+number(d,"read_mbps","")+" / 写 "+number(d,"write_mbps","")+" MiB/s\n可用 "+number(d,"free_gb"," GiB"));b.setTextColor(d.optInt("index")==selected?PanelStyle.ACCENT:PanelStyle.TEXT);}
+        for(int i=0;i<devices.length();i++){JSONObject d=devices.optJSONObject(i);Button b=(Button)drives.getChildAt(i);b.setText(d.optString("name")+"\n读 "+number(d,"read_mbps","")+" / 写 "+number(d,"write_mbps","")+" MiB/s\n可用 "+number(d,"free_gb"," GiB"));b.setTextColor(PanelTheme.color(d.optInt("index")==selected?PanelStyle.ACCENT:PanelStyle.TEXT));}
         if(detail==null)return;JSONObject d=detail.optJSONObject("metric");if(d==null)return;
         title.setText(d.optString("name")+" · 存储详情");
         StringBuilder text=new StringBuilder();text.append("读取  ").append(number(d,"read_mbps"," MiB/s")).append("       写入  ").append(number(d,"write_mbps"," MiB/s"));
@@ -52,7 +52,7 @@ public final class StorageActivity extends Activity {
         text.append("       写延迟  ").append(d.isNull("write_latency_ms")?d.optDouble("write_iops",-1)==0?"本周期无写入":"暂不可用":number(d,"write_latency_ms"," ms"));
         text.append("\n活动时间  ").append(number(d,"load_percent","%")).append("       排队请求  ").append(number(d,"queue_length",""));
         JSONArray volumes=d.optJSONArray("volumes");if(volumes!=null)for(int i=0;i<volumes.length();i++){JSONObject v=volumes.optJSONObject(i);text.append("\n").append(v.optString("mount")).append("   可用 ").append(number(v,"free_gb"," GiB")).append(" / 总 ").append(number(v,"total_gb"," GiB"));}
-        text.append("\n\n延迟为本采样周期已完成 I/O 的平均值，非瞬时最坏延迟。容量仅统计已挂载分区。");metrics.setText(text);graph.points=detail.optJSONArray("history");graph.invalidate();
+        text.append("\n\n延迟为本采样周期已完成 I/O 的平均值，非瞬时最坏延迟。容量仅统计已挂载分区。");String complete=HardwareFields.format(detail);metrics.setText(complete.isEmpty()?text:complete);graph.points=detail.optJSONArray("history");graph.invalidate();
     }
     private final Runnable poll=new Runnable(){public void run(){if(!active)return;worker.execute(() -> {
         try{JSONObject status=PanelConnection.request(StorageActivity.this,"/api/dashboard/status",null);JSONArray disks=status.optJSONObject("host").optJSONArray("disks");
@@ -70,14 +70,14 @@ public final class StorageActivity extends Activity {
         @Override protected void onDraw(Canvas c){super.onDraw(c);if(points==null)return;float max=1;
             for(int i=0;i<points.length();i++){JSONObject p=points.optJSONObject(i);max=Math.max(max,(float)Math.max(p.optDouble("read_mbps",0),p.optDouble("write_mbps",0))*1.15f);}
             float left=dp(44),right=getWidth()-dp(12),top=dp(31),bottom=getHeight()-dp(25);
-            paint.setColor(0xffdde3ec);paint.setStrokeWidth(dp(1));for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4;c.drawLine(left,y,right,y,paint);}for(int i=0;i<=6;i++){float x=left+(right-left)*i/6;c.drawLine(x,top,x,bottom,paint);}
-            paint.setColor(PanelStyle.MUTED);paint.setTextSize(dp(9));c.drawText(String.format(Locale.US,"%.1f",max),dp(6),top+dp(3),paint);c.drawText("MiB/s",dp(4),top+dp(16),paint);c.drawText("60 秒",left,bottom+dp(17),paint);c.drawText("现在",right-dp(23),bottom+dp(17),paint);
+            paint.setColor(PanelTheme.color(0xffdde3ec));paint.setStrokeWidth(dp(1));for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4;c.drawLine(left,y,right,y,paint);}for(int i=0;i<=6;i++){float x=left+(right-left)*i/6;c.drawLine(x,top,x,bottom,paint);}
+            paint.setColor(PanelTheme.color(PanelStyle.MUTED));paint.setTextSize(dp(9));c.drawText(String.format(Locale.US,"%.1f",max),dp(6),top+dp(3),paint);c.drawText("MiB/s",dp(4),top+dp(16),paint);c.drawText("60 秒",left,bottom+dp(17),paint);c.drawText("现在",right-dp(23),bottom+dp(17),paint);
             String[] keys={"read_mbps","write_mbps"};int[] colors={0xff5277bb,0xffa97a47};String[] labels={"读取","写入"};
-            for(int k=0;k<2;k++){Path path=new Path();boolean started=false;for(int i=0;i<points.length();i++){JSONObject p=points.optJSONObject(i);if(p==null||p.isNull(keys[k])||!p.has(keys[k])){started=false;continue;}float x=right-(59-(60-points.length()+i))*(right-left)/59;float y=bottom-(bottom-top)*(float)p.optDouble(keys[k])/max;if(!started){path.moveTo(x,y);started=true;}else path.lineTo(x,y);}paint.setColor(colors[k]);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(2));c.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(11));c.drawText("● "+labels[k],left+k*dp(70),dp(20),paint);}
+            for(int k=0;k<2;k++){Path path=new Path();boolean started=false;for(int i=0;i<points.length();i++){JSONObject p=points.optJSONObject(i);if(p==null||p.isNull(keys[k])||!p.has(keys[k])){started=false;continue;}float x=right-(59-(60-points.length()+i))*(right-left)/59;float y=bottom-(bottom-top)*(float)p.optDouble(keys[k])/max;if(!started){path.moveTo(x,y);started=true;}else path.lineTo(x,y);}paint.setColor(PanelTheme.color(colors[k]));paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(2));c.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);paint.setTextSize(dp(11));c.drawText("● "+labels[k],left+k*dp(70),dp(20),paint);}
         }
     }
     @Override public boolean dispatchTouchEvent(MotionEvent e){if(navigation!=null&&navigation.touch(e,event -> super.dispatchTouchEvent(event)))return true;return super.dispatchTouchEvent(e);}
-    @Override protected void onResume(){super.onResume();active=true;ui.removeCallbacks(poll);ui.post(poll);}
+    @Override protected void onResume(){super.onResume();if(PanelTheme.refresh(this))return;active=true;ui.removeCallbacks(poll);ui.post(poll);}
     @Override protected void onPause(){active=false;ui.removeCallbacks(poll);super.onPause();}
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus)PanelStyle.immersive(this);}
     @Override protected void onDestroy(){active=false;ui.removeCallbacksAndMessages(null);worker.shutdownNow();super.onDestroy();}

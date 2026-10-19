@@ -12,6 +12,7 @@ from .cpu_temperature import start_sampler
 from .mf_camera import register as register_mf_camera
 from .mf_camera import installed as mf_camera_installed
 from .desktop_style import apply_theme,ScrollPage,Foldout,device_label,BG,SIDEBAR,CARD,TEXT,MUTED,ACCENT
+from .desktop_style import resolve_theme,recolor_widgets
 
 class ControlCenter(tk.Tk):
     def __init__(self, bridge, api, activation=None):
@@ -30,6 +31,9 @@ class ControlCenter(tk.Tk):
         self.busy = 0
         self._caps_revision = None
         self._build()
+        self._change_appearance(persist=False)
+        self.bind_all('<Map>',self._appearance_mapped,add='+')
+        self.after(5000,self._watch_system_theme)
         self.protocol('WM_DELETE_WINDOW', self.close)
         self.after(200, self._tick)
         self.run(self.refresh_devices, '刷新设备')
@@ -43,6 +47,12 @@ class ControlCenter(tk.Tk):
         sidebar=ttk.Frame(shell,style='Sidebar.TFrame',width=196,padding=(14,26));sidebar.pack(side='left',fill='y');sidebar.pack_propagate(False)
         ttk.Label(sidebar,text='PhoneBridge',background=SIDEBAR,font=('Segoe UI',17,'bold')).pack(anchor='w',padx=14,pady=(8,3))
         ttk.Label(sidebar,text='手机外设管理',background=SIDEBAR,foreground=MUTED,font=('Microsoft YaHei UI',9)).pack(anchor='w',padx=14,pady=(0,34))
+        self.appearance_modes={'浅色':'light','深色':'dark','跟随系统':'system'}
+        chosen=self.bridge.config.get('appearance','light')
+        self.appearance=tk.StringVar(value=next((label for label,mode in self.appearance_modes.items() if mode==chosen),'浅色'))
+        ttk.Label(sidebar,text='外观主题',background=SIDEBAR,foreground=MUTED).pack(anchor='w',padx=14)
+        appearance=ttk.Combobox(sidebar,textvariable=self.appearance,values=list(self.appearance_modes),state='readonly',width=13)
+        appearance.pack(fill='x',padx=14,pady=(6,18));appearance.bind('<<ComboboxSelected>>',self._change_appearance)
         main=ttk.Frame(shell,padding=(28,23,23,16));main.pack(side='left',fill='both',expand=True)
         header=ttk.Frame(main);header.pack(fill='x',pady=(0,18))
         header_left=ttk.Frame(header);header_left.pack(side='left')
@@ -347,6 +357,24 @@ class ControlCenter(tk.Tk):
         ttk.Button(dialog,text='复制配对信息',command=lambda:(dialog.clipboard_clear(),dialog.clipboard_append(field.get('1.0','end').strip()))).pack(pady=5)
         ttk.Button(dialog,text='关闭无线并撤销授权',command=lambda:(self.api.stop_wireless(),dialog.destroy())).pack(pady=5)
         # Closing the window hides the code; the user can continue an established session.
+
+    def _change_appearance(self,event=None,persist=True):
+        mode=self.appearance_modes[self.appearance.get()]
+        self._appearance_mode=mode
+        apply_theme(self,mode)
+        if persist:
+            save_preferences(appearance=mode)
+            self.bridge.config['appearance']=mode
+
+    def _appearance_mapped(self,event):
+        if isinstance(event.widget,tk.Misc):
+            recolor_widgets(event.widget,getattr(self,'_appearance_resolved','light'))
+
+    def _watch_system_theme(self):
+        if self.bridge.shutdown_event.is_set():return
+        if self._appearance_mode=='system' and resolve_theme('system')!=self._appearance_resolved:
+            apply_theme(self,'system')
+        self.after(5000,self._watch_system_theme)
 
     def refresh_devices(self):
         found = self.bridge.detect_wired(include_adb=True)

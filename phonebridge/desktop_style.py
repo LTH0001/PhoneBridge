@@ -6,6 +6,36 @@ from tkinter import ttk
 BG='#f7f8fa'; SIDEBAR='#eef0f4'; CARD='#ffffff'; EDGE='#dce1e8'
 TEXT='#252c38'; MUTED='#647082'; ACCENT='#376bc1'; BLUE='#376bc1'
 
+PALETTES={
+    'light':dict(BG=BG,SIDEBAR=SIDEBAR,CARD=CARD,EDGE=EDGE,TEXT=TEXT,MUTED=MUTED,ACCENT=ACCENT),
+    'dark':dict(BG='#0b1018',SIDEBAR='#101925',CARD='#151e2b',EDGE='#2c3b50',
+                TEXT='#e7edf7',MUTED='#a6b6ce',ACCENT='#8bb7ff'),
+}
+
+def system_dark():
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize') as key:
+            return winreg.QueryValueEx(key,'AppsUseLightTheme')[0]==0
+    except (ImportError,OSError):
+        return False
+
+def resolve_theme(mode, reader=None):
+    if mode not in ('light','dark','system'):
+        raise ValueError('Unknown appearance mode')
+    return ('dark' if (reader or system_dark)() else 'light') if mode=='system' else mode
+
+def recolor_widgets(widget, mode):
+    """Retheme explicit Tk/ttk color overrides without rebuilding live controls."""
+    palette=PALETTES[mode]
+    mapping={value.lower():palette[key] for source in PALETTES.values() for key,value in source.items()}
+    for option in ('background','foreground','insertbackground','selectbackground','selectforeground','activebackground','activeforeground'):
+        try:
+            value=str(widget.cget(option)).lower()
+            if value in mapping:widget.configure(**{option:mapping[value]})
+        except (tk.TclError,AttributeError):pass
+    for child in widget.winfo_children():recolor_widgets(child,mode)
+
 def device_label(device):
     serial=device['serial']
     if device.get('transport')=='accessory':
@@ -15,7 +45,10 @@ def device_label(device):
     state={'device':'已授权','unauthorized':'请在手机允许调试','offline':'设备离线'}.get(device['state'],device['state'])
     return f'{name} · USB 调试 · {state} · {serial}'
 
-def apply_theme(root):
+def apply_theme(root, mode='light'):
+    resolved=resolve_theme(mode);palette=PALETTES[resolved]
+    BG,SIDEBAR,CARD,EDGE,TEXT,MUTED,ACCENT=(palette[k] for k in ('BG','SIDEBAR','CARD','EDGE','TEXT','MUTED','ACCENT'))
+    root._appearance_resolved=resolved
     root.configure(background=BG)
     root.option_add('*TCombobox*Listbox.background',CARD)
     root.option_add('*TCombobox*Listbox.foreground',TEXT)
@@ -40,6 +73,8 @@ def apply_theme(root):
     style.configure('Primary.TButton',background=ACCENT,foreground='#ffffff',bordercolor=ACCENT,
                     font=('Microsoft YaHei UI',10,'bold'))
     style.map('Primary.TButton',background=[('pressed','#2854a0'),('active','#4579ce')],foreground=[('disabled','#e1e7f0')])
+    if resolved=='dark':
+        style.configure('Primary.TButton',background='#3665bb',bordercolor='#3665bb',foreground='#ffffff')
     style.configure('Nav.TButton',background=SIDEBAR,foreground=MUTED,borderwidth=0,
                     bordercolor=SIDEBAR,lightcolor=SIDEBAR,darkcolor=SIDEBAR,anchor='w',padding=(18,14))
     style.map('Nav.TButton',background=[('active','#e3e7ee')],foreground=[('active',TEXT)])
@@ -60,7 +95,15 @@ def apply_theme(root):
     style.configure('Horizontal.TProgressbar',background=ACCENT,troughcolor=CARD,bordercolor=EDGE,lightcolor=ACCENT,darkcolor=ACCENT)
     style.configure('Treeview',background=CARD,fieldbackground=CARD,foreground=TEXT,rowheight=33,bordercolor=EDGE)
     style.configure('Treeview.Heading',background='#eef1f5',foreground=MUTED,padding=10,bordercolor=EDGE)
-    style.map('Treeview',background=[('selected','#e1ebfb')],foreground=[('selected',TEXT)])
+    if resolved=='dark':
+        style.map('TButton',background=[('pressed','#293b55'),('active','#213047')],foreground=[('disabled','#75859d')])
+        style.configure('NavActive.TButton',background='#20344f')
+        style.map('Nav.TButton',background=[('active','#213047')])
+        style.map('NavActive.TButton',background=[('active','#293b55')])
+        style.configure('Treeview.Heading',background='#203047')
+        style.map('Treeview',background=[('selected','#284468')],foreground=[('selected',TEXT)])
+    recolor_widgets(root,resolved)
+    style.map('Treeview',background=[('selected','#284468' if resolved=='dark' else '#e1ebfb')],foreground=[('selected',TEXT)])
     style.configure('Vertical.TScrollbar',background=EDGE,troughcolor=BG,arrowcolor=MUTED,bordercolor=BG)
     style.configure('Shell.TNotebook',background=BG,bordercolor=BG,lightcolor=BG,darkcolor=BG,borderwidth=0,tabmargins=0)
     style.layout('Shell.TNotebook.Tab',[])

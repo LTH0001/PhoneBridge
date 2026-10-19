@@ -15,15 +15,15 @@ public final class InputActivity extends Activity {
     private TextView status,padHint;private Button enable,numbers,back,desktop;private TouchpadView pad;private HoldToTalk holdToTalk;private long lastSend;
     private int dp(int n){return HomeStyle.dp(this,n);}
     private Button button(String title,View.OnClickListener click){return HomeStyle.button(this,title,false,click);}
-    private TextView text(String title,int size){TextView v=new TextView(this);v.setText(title);v.setTextSize(size);v.setTextColor(HomeStyle.MUTED);return v;}
+    private TextView text(String title,int size){TextView v=new TextView(this);v.setText(title);v.setTextSize(size);v.setTextColor(PanelTheme.color(HomeStyle.MUTED));return v;}
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        super.onCreate(state);PanelTheme.apply(this);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if(Build.VERSION.SDK_INT>=28){WindowManager.LayoutParams attributes=getWindow().getAttributes();attributes.layoutInDisplayCutoutMode=Build.VERSION.SDK_INT>=30?3:1;getWindow().setAttributes(attributes);}
         PanelStyle.immersive(this);PanelConnection.configure(this,getIntent());
         FrameLayout shell=new FrameLayout(this);
-        LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(18),dp(12),dp(18),dp(12));root.setBackgroundColor(HomeStyle.BG);shell.addView(root,new FrameLayout.LayoutParams(-1,-1));
+        LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(18),dp(12),dp(18),dp(12));root.setBackgroundColor(PanelTheme.color(HomeStyle.BG));shell.addView(root,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView title=text("电脑触控板",17);title.setTextColor(HomeStyle.TEXT);header.addView(title,new LinearLayout.LayoutParams(0,dp(30),1));
+        TextView title=text("电脑触控板",17);title.setTextColor(PanelTheme.color(HomeStyle.TEXT));header.addView(title,new LinearLayout.LayoutParams(0,dp(30),1));
         status=text("尚未启用电脑键鼠输入",12);status.setPadding(dp(14),0,0,0);header.addView(status,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
         pad=new TouchpadView(this,this::enqueue);pad.setEnabled(false);
         LinearLayout.LayoutParams area=new LinearLayout.LayoutParams(-1,0,1);area.topMargin=dp(12);area.bottomMargin=dp(8);root.addView(pad,area);
@@ -109,7 +109,7 @@ public final class InputActivity extends Activity {
     @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){super.onRequestPermissionsResult(request,permissions,results);if(request==HoldToTalk.PERMISSION)holdToTalk.permissionResult(results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED);}
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus)PanelStyle.immersive(this);}
     @Override public void onBackPressed(){returnLocal();}
-    @Override protected void onResume(){super.onResume();active=true;holdToTalk.resume();refreshNavigation();ui.removeCallbacks(tick);ui.post(tick);}
+    @Override protected void onResume(){super.onResume();if(PanelTheme.refresh(this))return;active=true;holdToTalk.resume();refreshNavigation();ui.removeCallbacks(tick);ui.post(tick);}
     @Override protected void onPause(){active=false;restoreInput=false;holdToTalk.pause();stop();ui.removeCallbacks(tick);super.onPause();}
     @Override protected void onDestroy(){holdToTalk.close();ui.removeCallbacksAndMessages(null);worker.shutdown();super.onDestroy();}
 }

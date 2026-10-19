@@ -1,6 +1,7 @@
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from phonebridge import __version__
 
 ROOT=Path(__file__).resolve().parent.parent
 A='{http://schemas.android.com/apk/res/android}'
@@ -8,7 +9,7 @@ A='{http://schemas.android.com/apk/res/android}'
 class AndroidBrandTests(unittest.TestCase):
     def test_launcher_resources_resolve_and_permissions_unchanged(self):
         manifest=ET.parse(ROOT/'android/app/AndroidManifest.xml').getroot()
-        self.assertEqual(manifest.get(A+'versionName'),'0.8.10')
+        self.assertEqual(manifest.get(A+'versionName'),__version__)
         self.assertEqual(manifest.find('application').get(A+'icon'),'@mipmap/ic_launcher')
         home=manifest.find("application/activity[@"+A+"name='.MainActivity']")
         self.assertEqual(home.get(A+'theme'),'@style/PhoneBridgeHomeTheme')

@@ -38,7 +38,7 @@ public final class DashboardActivity extends Activity {
     private static final int TEXT=0xff252c38, MUTED=0xff647082, ACCENT=0xff376bc1;
 
     @Override public void onCreate(Bundle state) {
-        super.onCreate(state);
+        super.onCreate(state);PanelTheme.apply(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if(android.os.Build.VERSION.SDK_INT>=28) {
             WindowManager.LayoutParams attributes=getWindow().getAttributes();
@@ -73,6 +73,8 @@ public final class DashboardActivity extends Activity {
         TextView subtitle=label("PHONEBRIDGE / LIVE TELEMETRY",7,MUTED);subtitle.setLetterSpacing(.12f);brand.addView(subtitle);
         header.addView(brand,new LinearLayout.LayoutParams(0,dp(34),1));
         connection=label("连接中",12,MUTED); header.addView(connection);
+        Button appearance=button("外观",v -> PanelTheme.choose(this));
+        LinearLayout.LayoutParams appearanceSlot=new LinearLayout.LayoutParams(dp(64),dp(34));appearanceSlot.leftMargin=dp(8);header.addView(appearance,appearanceSlot);
         Button padInput=button("触控板",v -> startActivity(new Intent(this,InputActivity.class).putExtra("tab","pad")));
         LinearLayout.LayoutParams padSlot=new LinearLayout.LayoutParams(dp(78),dp(34));padSlot.leftMargin=dp(8);header.addView(padInput,padSlot);
         Button voiceInput=button("按住说话",null);
@@ -135,6 +137,7 @@ public final class DashboardActivity extends Activity {
         addCard(row1,memory,true);addCard(row1,disk,false);
         hint=label("每秒更新 · 只读硬件数据",10,MUTED);hint.setMaxLines(1);hint.setEllipsize(android.text.TextUtils.TruncateAt.END);
         LinearLayout footer=new LinearLayout(this);footer.addView(hint,new LinearLayout.LayoutParams(0,dp(24),1));
+        footer.addView(button("全部硬件",v -> startActivity(new Intent(this,HardwareActivity.class))),new LinearLayout.LayoutParams(dp(96),dp(24)));
         footer.addView(button("系统 / PID",v -> startActivity(new Intent(this,SystemActivity.class))),new LinearLayout.LayoutParams(dp(112),dp(24)));root.addView(footer);
         setContentView(shell); refreshButtons();
     }
@@ -154,26 +157,26 @@ public final class DashboardActivity extends Activity {
             detail=label("等待数据",9,MUTED);detail.setMaxLines(2);detail.setEllipsize(android.text.TextUtils.TruncateAt.END);
             gauge=dial?new InstrumentGauge(DashboardActivity.this,name,color):null;
             fuel=dial?null:new FuelGauge(DashboardActivity.this,color,"磁盘".equals(name));
-            if(dial){box.setBackgroundColor(android.graphics.Color.TRANSPARENT);box.addView(gauge,new LinearLayout.LayoutParams(-1,-1));}
+            if(dial){box.setBackgroundColor(PanelTheme.color(android.graphics.Color.TRANSPARENT));box.addView(gauge,new LinearLayout.LayoutParams(-1,-1));}
             else {box.setOrientation(LinearLayout.HORIZONTAL);box.addView(fuel,new LinearLayout.LayoutParams(dp(77),-1));LinearLayout info=new LinearLayout(DashboardActivity.this);info.setOrientation(LinearLayout.VERTICAL);info.setGravity(Gravity.CENTER_VERTICAL);info.addView(title);info.addView(detail);box.addView(info,new LinearLayout.LayoutParams(0,-1,1));}
             bar=new ProgressBar(DashboardActivity.this,null,android.R.attr.progressBarStyleHorizontal);
-            bar.setMax(100); bar.setProgressTintList(ColorStateList.valueOf(color));
+            bar.setMax(100); bar.setProgressTintList(ColorStateList.valueOf(PanelTheme.color(color)));
             // Compact bands and analog dials already carry the meter; no duplicate bar.
         }
     }
 
     private LinearLayout box() {
         LinearLayout layout=new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setBackgroundColor(android.graphics.Color.TRANSPARENT);return layout;
+        layout.setBackgroundColor(PanelTheme.color(android.graphics.Color.TRANSPARENT));return layout;
     }
     private TextView label(String text,int size,int color) {
-        TextView view=new TextView(this); view.setText(text); view.setTextSize(size); view.setTextColor(color);
+        TextView view=new TextView(this); view.setText(text); view.setTextSize(size); view.setTextColor(PanelTheme.color(color));
         view.setGravity(Gravity.CENTER_VERTICAL); return view;
     }
     private Button button(String text,View.OnClickListener click) {
         Button b=PanelStyle.button(this,text,false,click);b.setStateListAnimator(null);b.setElevation(0);b.setPadding(dp(8),0,dp(8),0);b.setMinimumHeight(0);b.setMinHeight(0);
-        GradientDrawable surface=new GradientDrawable();surface.setColor(0x55ffffff);surface.setCornerRadius(dp(9));surface.setStroke(dp(1),0x4096aac3);
-        b.setBackground(new android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x18376bc1),surface,null));return b;
+        GradientDrawable surface=new GradientDrawable();surface.setColor(PanelTheme.color(0x55ffffff));surface.setCornerRadius(dp(9));surface.setStroke(dp(1),PanelTheme.color(0x4096aac3));
+        b.setBackground(new android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(PanelTheme.color(0x18376bc1)),surface,null));return b;
     }
     private int dp(int number) { return Math.round(number*getResources().getDisplayMetrics().density); }
 
@@ -201,13 +204,13 @@ public final class DashboardActivity extends Activity {
         if(playback!=null)playback.update(data.optJSONObject("playback"));
         boolean connected=data.optBoolean("connected");
         connection.setText(connected ? ("wireless".equals(data.optString("transport"))?"无线已连接":"USB 已连接") : "连接已断开");
-        connection.setTextColor(connected ? ACCENT : 0xffa84e48);
+        connection.setTextColor(PanelTheme.color(connected ? ACCENT : 0xffa84e48));
         JSONObject host=data.optJSONObject("host");
         if(host!=null) {
             JSONObject processor=host.optJSONObject("cpu"), ram=host.optJSONObject("memory");
             boolean hasTemperature=processor!=null && processor.has("temperature_c") && !processor.isNull("temperature_c");
             String cpuDetail=hasTemperature ? String.format(Locale.US,"%s %.0f°C", "Core Max".equals(processor.optString("temperature_source")) ? "核心最高" : "封装温度",processor.optDouble("temperature_c")) : "温度暂不可用";
-            setMetric(cpu,processor,"CPU",cpuDetail);
+            setMetric(cpu,processor,"CPU · "+HardwareNames.compact(processor==null?"":processor.optString("name"),"型号读取中"),cpuDetail);
             String memoryText=ram==null ? "不可用" : String.format(Locale.US,"%.1f / %.1f GiB",ram.optDouble("used_gb"),ram.optDouble("total_gb"));
             setMetric(memory,ram,"内存 · 已用",memoryText);
             JSONArray gpus=host.optJSONArray("gpus");
@@ -238,6 +241,7 @@ public final class DashboardActivity extends Activity {
 
     private void setMetric(Card card,JSONObject value,String title,String detail) {
         card.title.setText(title); card.detail.setText(detail);
+        if(card.gauge!=null)card.gauge.setModel(title);
         boolean valid=value!=null && !value.isNull("load_percent") && value.has("load_percent");
         double percent=valid ? value.optDouble("load_percent") : 0;
         card.value.setText(valid ? String.format(Locale.US,"%.0f%%",percent) : "—"); card.bar.setProgress((int)Math.max(0,Math.min(100,percent)));
@@ -245,7 +249,7 @@ public final class DashboardActivity extends Activity {
         if(card.fuel!=null)card.fuel.update(valid?percent:null);
     }
     private void gpu(Card card,JSONObject value,int number) {
-        String name=value==null ? "未读取到 NVIDIA 显卡" : value.optString("name").replace("NVIDIA GeForce ","");
+        String name=HardwareNames.compact(value==null?"":value.optString("name"),"未读取到显卡");
         String detail="温度不可用";
         if(value!=null) {
             detail=value.isNull("temperature_c") ? "温度不可用" : value.optInt("temperature_c")+"°C";
@@ -281,7 +285,7 @@ public final class DashboardActivity extends Activity {
     }
     private void failure(Exception error) {
         if(hint!=null) {
-            hint.setText("未完成："+error.getMessage()); connection.setText("等待电脑连接"); connection.setTextColor(0xffa84e48);
+            hint.setText("未完成："+PanelRoute.errorMessage(error)); connection.setText("面板请求失败"); connection.setTextColor(PanelTheme.color(0xffa84e48));
             canToggle=canPrevious=canNext=false; refreshButtons();
         }
     }
@@ -293,7 +297,7 @@ public final class DashboardActivity extends Activity {
         super.onRequestPermissionsResult(request,permissions,results);
         if(request==HoldToTalk.PERMISSION&&holdToTalk!=null)holdToTalk.permissionResult(results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED);
     }
-    @Override protected void onResume() { super.onResume(); active=true;if(holdToTalk!=null)holdToTalk.resume(); ui.removeCallbacks(poll); ui.postDelayed(poll,200);ui.removeCallbacks(lyricPoll);ui.postDelayed(lyricPoll,250); }
+    @Override protected void onResume() { super.onResume();if(PanelTheme.refresh(this))return; active=true;if(holdToTalk!=null)holdToTalk.resume(); ui.removeCallbacks(poll); ui.postDelayed(poll,200);ui.removeCallbacks(lyricPoll);ui.postDelayed(lyricPoll,250); }
     @Override protected void onPause() { active=false;if(holdToTalk!=null)holdToTalk.pause(); ui.removeCallbacks(poll);ui.removeCallbacks(lyricPoll); super.onPause(); }
     @Override public void onBackPressed() { command("/api/dashboard/desktop",new JSONObject(),true); }
     @Override public boolean dispatchTouchEvent(android.view.MotionEvent event){if(holdToTalk!=null&&holdToTalk.ownsGesture())return super.dispatchTouchEvent(event);if(navigation!=null&&navigation.touch(event,e -> super.dispatchTouchEvent(e)))return true;return super.dispatchTouchEvent(event);}

@@ -14,15 +14,15 @@ final class HomeStyle {
     static int dp(Context c,int n){return PanelStyle.dp(c,n);}
     static Button button(Context c,String text,boolean unused,View.OnClickListener click){
         Button b=new Button(c);b.setText(text);b.setTextSize(14);b.setAllCaps(false);
-        b.setTextColor(TEXT);b.setPadding(dp(c,12),0,dp(c,12),0);b.setElevation(0);
-        GradientDrawable shape=new GradientDrawable();shape.setColor(0xfff3f5f8);
-        shape.setCornerRadius(dp(c,10));shape.setStroke(dp(c,1),0xffe1e5ec);
-        b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x19376bc1),shape,null));
+        b.setTextColor(PanelTheme.color(TEXT));b.setPadding(dp(c,12),0,dp(c,12),0);b.setElevation(0);
+        GradientDrawable shape=new GradientDrawable();shape.setColor(PanelTheme.color(0xfff3f5f8));
+        shape.setCornerRadius(dp(c,10));shape.setStroke(dp(c,1),PanelTheme.color(0xffe1e5ec));
+        b.setBackground(new RippleDrawable(ColorStateList.valueOf(PanelTheme.color(0x19376bc1)),shape,null));
         b.setOnClickListener(click);return b;
     }
     static void primary(Button b){
-        GradientDrawable shape=new GradientDrawable();shape.setColor(ACCENT);shape.setCornerRadius(dp(b.getContext(),10));
-        b.setTextColor(0xffffffff);b.setTypeface(null,Typeface.BOLD);
-        b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x22ffffff),shape,null));
+        GradientDrawable shape=new GradientDrawable();shape.setColor(PanelTheme.primary());shape.setCornerRadius(dp(b.getContext(),10));
+        PanelTheme.primaryText(b);b.setTypeface(null,Typeface.BOLD);
+        b.setBackground(new RippleDrawable(ColorStateList.valueOf(PanelTheme.color(0x22ffffff)),shape,null));
     }
 }

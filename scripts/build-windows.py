@@ -11,12 +11,16 @@ import os
 from pathlib import Path
 import sys
 import zipfile
+import argparse
 
 ROOT=Path(__file__).resolve().parent.parent
 sys.path.insert(0,str(ROOT))
 from phonebridge import __version__
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--onefile',action='store_true',help='Build one self-extracting EXE with embedded APK and dependency assets')
+    options=parser.parse_args()
     if os.name!='nt' or sys.maxsize<=2**32:
         raise SystemExit('Build requires 64-bit Windows Python.')
     import PyInstaller.__main__
@@ -24,12 +28,12 @@ def main():
         raise SystemExit('Install build requirement: pyinstaller==6.22.3')
     stamp=datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     build=ROOT/'runtime'/'build-windows'/stamp
-    output=ROOT/'dist'/f'PhoneBridge-{__version__}-dev-windows-{stamp}'
+    output=ROOT/'dist'/f'PhoneBridge-{__version__}-dev-windows-{"onefile-" if options.onefile else ""}{stamp}'
     archive=output.parent/(output.name+'.zip')
     if build.exists() or output.exists() or archive.exists():
         raise SystemExit('Build target already exists; refusing to overwrite.')
     build.mkdir(parents=True);output.mkdir(parents=True)
-    args=[str(ROOT/'scripts/frozen-entry.py'),'--name','PhoneBridge','--onedir',
+    args=[str(ROOT/'scripts/frozen-entry.py'),'--name','PhoneBridge','--onefile' if options.onefile else '--onedir',
           '--windowed','--noupx','--paths',str(ROOT),'--distpath',str(output),
           '--workpath',str(build/'work'),'--specpath',str(build)]
     assets=['phonebridge/phone.html','phonebridge/setup.html','README.md','LICENSE','THIRD_PARTY_NOTICES.md',
@@ -73,16 +77,21 @@ def main():
         args.extend(['--exclude-module',module])
     print('Building local development executable; no USB/driver operation is performed.',flush=True)
     PyInstaller.__main__.run(args)
-    package=output/'PhoneBridge'
+    package=output if options.onefile else output/'PhoneBridge'
+    executable=package/'PhoneBridge.exe'
+    if options.onefile:
+        executable=package/f'PhoneBridge-{__version__}-windows-x64.exe'
+        (package/'PhoneBridge.exe').rename(executable)
     import shutil
-    shutil.copy2(ROOT/'android/app/build/phonebridge.apk',package/'PhoneBridge-Android.apk')
+    if not options.onefile:
+        shutil.copy2(ROOT/'android/app/build/phonebridge.apk',package/'PhoneBridge-Android.apk')
     (package/'BUILD-DEPENDENCIES.json').write_text(json.dumps(versions,indent=2),encoding='utf-8')
     (package/'READ-ME-FIRST.txt').write_text(
-        'PhoneBridge '+__version__+' / 桌面改版免安装体验包\n\n'
-        '双击 PhoneBridge.exe，无需另行安装 Python。Android APK 位于 _internal/android/app/build/phonebridge.apk。\n'
-        '同目录 PhoneBridge-Android.apk 可复制到另一台 Android 手机确认安装。\n'
-        '当前稳定路径：手机开启 USB 调试（不需要无线调试），插线并允许自己的电脑，选择已授权手机后连接。\n'
-        '请完整解压并保留 _internal 文件夹；部分品牌需另装官方 ADB 驱动。推荐 Windows 11 x64。\n'
+        'PhoneBridge '+__version__+' / 桌面改版免安装体验包\n\n'+
+        ('单文件 EXE：APK 与许可已嵌入，首次启动解压可能较慢；可在软件内导出/安装手机 APK。未签名，不能绕过系统安全提示。\n' if options.onefile else '双击 PhoneBridge.exe，无需另行安装 Python。Android APK 位于 _internal/android/app/build/phonebridge.apk。\n')+
+        ('手机 APK 已内嵌，可在软件内导出到另一台 Android 手机确认安装。\n' if options.onefile else '同目录 PhoneBridge-Android.apk 可复制到另一台 Android 手机确认安装。\n')+
+        '当前稳定路径：手机开启 USB 调试（不需要无线调试），插线并允许自己的电脑，选择已授权手机后连接。\n'+
+        ('单文件版无需另带 _internal 文件夹；部分品牌需另装官方 ADB 驱动。推荐 Windows 11 x64。\n' if options.onefile else '请完整解压并保留 _internal 文件夹；部分品牌需另装官方 ADB 驱动。推荐 Windows 11 x64。\n')+
         '免调试 AOA 仍有本机 Code 10 / USB 枚举故障，尚未通过即插即用验收。\n'
         '本包不是已完成的安装器，不自动安装任何驱动，不绕过手机或 Windows 授权。\n'
         '首次使用系统摄像头、副屏、CPU 温度仍需各自的系统组件与管理员确认。\n'
@@ -97,7 +106,7 @@ def main():
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=3) as stream:
         for path in sorted(package.rglob('*')):
             if path.is_file():stream.write(path,'PhoneBridge/'+path.relative_to(package).as_posix())
-    print(json.dumps({'executable':str(package/'PhoneBridge.exe'),'archive':str(archive),
+    print(json.dumps({'executable':str(executable),'archive':str(archive),
                       'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()}),flush=True)
 
 if __name__=='__main__':

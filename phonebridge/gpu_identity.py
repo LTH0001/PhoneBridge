@@ -12,6 +12,10 @@ class Query(c.Structure):_fields_=[('handle',w.UINT),('type',c.c_int),('data',c.
 class Address(c.Structure):_fields_=[('bus',w.UINT),('device',w.UINT),('function',w.UINT)]
 class CloseAdapter(c.Structure):_fields_=[('handle',w.UINT)]
 
+def physical_pci(address):
+    """Reject the sentinel address used by indirect/virtual DXGI views."""
+    return 0<=address[0]<=255 and 0<=address[1]<=31 and 0<=address[2]<=7
+
 def method(obj,index,ret,args):
     table=c.cast(obj,c.POINTER(c.POINTER(c.c_void_p))).contents
     return c.WINFUNCTYPE(ret,c.c_void_p,*args)(table[index])
@@ -35,7 +39,10 @@ def adapter_addresses():
                 try:
                     address=Address();query=Query(opened.handle,6,c.cast(c.byref(address),c.c_void_p),c.sizeof(address))
                     if gdi.D3DKMTQueryAdapterInfo(c.byref(query))>=0:
+                        if desc.flags&2 or not physical_pci((address.bus,address.device,address.function)):continue
                         result.append({'name':desc.name,'vendor':desc.vendor,'pci':(address.bus,address.device,address.function),
+                                       'dedicated_total_mb':round(desc.video_memory/1048576),
+                                       'shared_total_mb':round(desc.shared_memory/1048576),
                                        'luid':(desc.luid.high&0xffffffff,desc.luid.low)})
                 finally:gdi.D3DKMTCloseAdapter(c.byref(CloseAdapter(opened.handle)))
             finally:method(adapter,2,w.ULONG,[])(adapter)

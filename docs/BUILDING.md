@@ -60,6 +60,10 @@ Windows EXE 是另一条可选构建链：先准备 APK、原生相机、scrcpy�
 
 ## 本轮整理的本地验证（2026-10-17）
 
+### 0.8.12 单文件 EXE
+
+运行 `scripts/build-windows.py --onefile` 可生成带嵌入 APK、模型、工具与许可材料的单个 Windows x64 EXE。首次启动会在临时目录解压，可能比目录版慢；偏好与令牌仍写入 `%LOCALAPPDATA%/PhoneBridge`，不是临时目录。可在软件内导出 APK。构建不会提交或发布 GitHub Release，也不生成可信发布签名。第三方资源分发审查与干净电脑实测要求不变，见 RELEASING.md。
+
 - Windows x64 / Python 3.13：177 项 Python 测试通过；导出的不含 vendor 二进制的源码目录中再次通过，使用同一 Python 依赖环境，不冒称干净电脑安装验收。
 - JDK 17：12 项面板手势、22 项语音手势、224 项数字区布局用例通过。
 - Python 直接依赖与参考传递约束的 pip 全新解析模拟通过（`--dry-run --ignore-installed`），未改动现有环境。

@@ -18,12 +18,12 @@ public final class SystemActivity extends Activity {
     private String query="",sort="memory";private TextView system,status,pageLabel;private EditText search;
     private LinearLayout rows;private Button prev,next,sorting;
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        super.onCreate(state);PanelTheme.apply(this);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if(Build.VERSION.SDK_INT>=28){WindowManager.LayoutParams a=getWindow().getAttributes();a.layoutInDisplayCutoutMode=Build.VERSION.SDK_INT>=30?3:1;getWindow().setAttributes(a);}
         immersive();build();navigation=new PanelNavigation(this,() -> finish(),() -> PanelNavigation.panel(this),() -> PanelNavigation.desktop(this));
     }
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
-    private TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setGravity(Gravity.CENTER_VERTICAL);return t;}
+    private TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(PanelTheme.color(color));t.setGravity(Gravity.CENTER_VERTICAL);return t;}
     private Button button(String label,View.OnClickListener action){return PanelStyle.button(this,label,false,action);}
     private void build(){
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(16),dp(8),dp(16),dp(8));root.setBackground(PanelStyle.background());
@@ -35,7 +35,7 @@ public final class SystemActivity extends Activity {
         LinearLayout body=new LinearLayout(this);root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
         ScrollView osScroll=new ScrollView(this);system=text("读取系统信息…",13,0xff465468);system.setGravity(Gravity.TOP);system.setPadding(0,dp(10),dp(12),0);osScroll.addView(system);body.addView(osScroll,new LinearLayout.LayoutParams(0,-1,.35f));
         LinearLayout right=new LinearLayout(this);right.setOrientation(LinearLayout.VERTICAL);body.addView(right,new LinearLayout.LayoutParams(0,-1,.65f));
-        LinearLayout filters=new LinearLayout(this);search=new EditText(this);search.setSingleLine(true);search.setTextSize(12);search.setTextColor(0xff252c38);search.setHintTextColor(0xff647082);search.setHint("进程名称或 PID");search.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(80)});
+        LinearLayout filters=new LinearLayout(this);search=new EditText(this);search.setSingleLine(true);search.setTextSize(12);search.setTextColor(PanelTheme.color(0xff252c38));search.setHintTextColor(PanelTheme.color(0xff647082));search.setHint("进程名称或 PID");search.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(80)});
         filters.addView(search,new LinearLayout.LayoutParams(0,dp(38),1));filters.addView(button("搜索",v -> {query=search.getText().toString().trim();page=0;refresh();((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(search.getWindowToken(),0);}),new LinearLayout.LayoutParams(dp(58),dp(38)));
         sorting=button("内存排序",v -> {sort=sort.equals("memory")?"cpu":sort.equals("cpu")?"pid":"memory";sorting.setText(sort.equals("memory")?"内存排序":sort.equals("cpu")?"CPU 排序":"PID 排序");page=0;refresh();});filters.addView(sorting,new LinearLayout.LayoutParams(dp(88),dp(38)));right.addView(filters);
         right.addView(row("进程名称","PID","CPU","内存 MiB",null),new LinearLayout.LayoutParams(-1,dp(32)));
@@ -59,7 +59,7 @@ public final class SystemActivity extends Activity {
     }
     private void showDetails(JSONObject p){
         String started=p.isNull("created_at")?"不可读":new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.getDefault()).format(new java.util.Date((long)(p.optDouble("created_at")*1000)));
-        new AlertDialog.Builder(this).setTitle(p.optString("name")).setMessage("PID  "+p.optInt("pid")+"\n父 PID  "+(p.isNull("ppid")?"不可读":p.optInt("ppid"))+"\n状态  "+p.optString("status","不可读")+"\n启动时间  "+started+"\n线程数  "+(p.isNull("threads")?"不可读":p.optInt("threads"))+"\n句柄数  "+(p.isNull("handles")?"不可读":p.optInt("handles"))+"\nCPU  "+metric(p,"cpu_percent","%")+"\n工作集  "+metric(p,"memory_mb"," MiB")+"\n\n只读快照；进程可能已退出。此处不能结束或修改进程。")
+        PanelTheme.dialog(this).setTitle(p.optString("name")).setMessage("PID  "+p.optInt("pid")+"\n父 PID  "+(p.isNull("ppid")?"不可读":p.optInt("ppid"))+"\n状态  "+p.optString("status","不可读")+"\n启动时间  "+started+"\n线程数  "+(p.isNull("threads")?"不可读":p.optInt("threads"))+"\n句柄数  "+(p.isNull("handles")?"不可读":p.optInt("handles"))+"\nCPU  "+metric(p,"cpu_percent","%")+"\n工作集  "+metric(p,"memory_mb"," MiB")+"\n\n只读快照；进程可能已退出。此处不能结束或修改进程。")
             .setPositiveButton("返回",null).show();
     }
     private void refresh(){if(!active||busy)return;ui.removeCallbacks(poll);ui.post(poll);}
@@ -79,7 +79,7 @@ public final class SystemActivity extends Activity {
     private void immersive(){PanelStyle.immersive(this);}
     @Override public void onWindowFocusChanged(boolean focus){super.onWindowFocusChanged(focus);if(focus)immersive();}
     @Override public boolean dispatchTouchEvent(MotionEvent e){if(navigation!=null&&navigation.touch(e,event -> super.dispatchTouchEvent(event)))return true;return super.dispatchTouchEvent(e);}
-    @Override protected void onResume(){super.onResume();active=true;ui.removeCallbacks(poll);ui.post(poll);}
+    @Override protected void onResume(){super.onResume();if(PanelTheme.refresh(this))return;active=true;ui.removeCallbacks(poll);ui.post(poll);}
     @Override protected void onPause(){active=false;ui.removeCallbacks(poll);super.onPause();}
     @Override protected void onDestroy(){active=false;ui.removeCallbacksAndMessages(null);worker.shutdownNow();super.onDestroy();}
 }

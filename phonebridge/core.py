@@ -61,12 +61,17 @@ class Bridge:
 
     def detect_wired(self, include_adb=False):
         from .usb_setup import discover
-        # Native USB discovery does not need/start ADB. Legacy entries remain
-        # available explicitly when no supported native USB phone is present.
+        # Native-only discovery must not start ADB when an accessory is found.
+        # The GUI explicitly opts in to ADB: an AOA descriptor does not prove
+        # its data interface is usable (another driver may own interface 0).
+        # Never hide an authorized ADB connection behind an experimental entry.
         found = discover()
-        if found and (not include_adb or any(d['serial'].startswith(('usb:18d1:','usb-error:18d1:')) for d in found)):
+        if found and not include_adb:
             return found
-        return self.detect()+found
+        adb = self.detect()
+        if include_adb:
+            adb = sorted(adb, key=lambda device: device.get('state') != 'device')
+        return adb+found
 
     def connect_wired(self, selected=''):
         from .usb_setup import prepare

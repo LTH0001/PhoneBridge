@@ -55,7 +55,7 @@ final class PanelPlayback {
             JSONObject item=items.optJSONObject(i);names[i]=item.optString("name");ids[i]=item.optString("id");
             if(item.optBoolean("default"))selected=i;
         }
-        new AlertDialog.Builder(activity).setTitle("电脑播放设备 · 不更改通话设备")
+        PanelTheme.dialog(activity).setTitle("电脑播放设备 · 不更改通话设备")
             .setSingleChoiceItems(names,selected,(dialog,which) -> {dialog.dismiss();send("device",null,ids[which]);})
             .setNegativeButton("取消",null).show();
     }

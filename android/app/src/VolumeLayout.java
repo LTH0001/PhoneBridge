@@ -75,11 +75,11 @@ final class VolumeLayout extends LinearLayout {
         if(fadeStart>0){hudAlpha=Math.max(0,1-(android.os.SystemClock.uptimeMillis()-fadeStart)/220f);if(hudAlpha<=0)return;}
         float d=getResources().getDisplayMetrics().density,w=48*d,h=190*d;
         float x=getWidth()-w-12*d,y=(getHeight()-h)/2;
-        paint.setColor(0xfaffffff);paint.setAlpha((int)(235*hudAlpha));canvas.drawRoundRect(new RectF(x,y,x+w,y+h),24*d,24*d,paint);
+        paint.setColor(PanelTheme.color(0xfaffffff));paint.setAlpha((int)(235*hudAlpha));canvas.drawRoundRect(new RectF(x,y,x+w,y+h),24*d,24*d,paint);
         float top=y+28*d,bottom=y+h-48*d,left=x+17*d,right=x+w-17*d;
-        paint.setColor(0xffdce4ef);paint.setAlpha((int)(255*hudAlpha));canvas.drawRoundRect(new RectF(left,top,right,bottom),7*d,7*d,paint);
-        paint.setColor(muted?0xff647082:0xff376bc1);paint.setAlpha((int)(255*hudAlpha));canvas.drawRoundRect(new RectF(left,bottom-(bottom-top)*volume/100f,right,bottom),7*d,7*d,paint);
-        paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(12*d);paint.setColor(0xff252c38);paint.setAlpha((int)(255*hudAlpha));
+        paint.setColor(PanelTheme.color(0xffdce4ef));paint.setAlpha((int)(255*hudAlpha));canvas.drawRoundRect(new RectF(left,top,right,bottom),7*d,7*d,paint);
+        paint.setColor(PanelTheme.color(muted?0xff647082:0xff376bc1));paint.setAlpha((int)(255*hudAlpha));canvas.drawRoundRect(new RectF(left,bottom-(bottom-top)*volume/100f,right,bottom),7*d,7*d,paint);
+        paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(12*d);paint.setColor(PanelTheme.color(0xff252c38));paint.setAlpha((int)(255*hudAlpha));
         canvas.drawText(volume+"%",x+w/2,y+h-28*d,paint);paint.setTextSize(9*d);canvas.drawText(muted?"已静音":message,x+w/2,y+h-12*d,paint);
         if(fadeStart>0)postInvalidateOnAnimation();
     }
